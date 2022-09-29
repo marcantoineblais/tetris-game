@@ -127,7 +127,9 @@ Object.defineProperty(Object.prototype, "map", {
   }
 })
 
-
+// forEach(arg = arrowFunction)
+// input arrow function that uses key, value, index as arguments and perform some actions
+// output undefined
 Object.defineProperty(Object.prototype, "forEach", {
   value: function (arrowFunc = () => null) {
     Object.entries(this).forEach(([key, value], index) => arrowFunc(key, value, index))
