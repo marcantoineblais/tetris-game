@@ -1,7 +1,7 @@
 import React from "react"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
-const test = <h1>Main Page</h1>
+const test = <p>Main Page</p>
 
 const App = () => {
     return (

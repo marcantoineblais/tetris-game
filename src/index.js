@@ -3,9 +3,9 @@ import ReactDOMClient from "react-dom/client"
 import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import reducer from "./reducer"
-import { BrowserRouter, Route } from "react-router-dom"
 
 import App from "./components/App"
+import "./index.scss"
 
 const container = document.getElementById('root')
 const root = ReactDOMClient.createRoot(container)
