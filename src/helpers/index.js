@@ -47,10 +47,53 @@ Object.defineProperty(String.prototype, "occurence", {
 
 /* ________________________________________________________________________________________________ */
 
+// NUMBER METHODS
+
+// Random(minValue, maxValue) or Random(maxValue)
+// input 1 or 2 integer; 1 integer will define the max value; 2 integer will define min and max
+// output 1 random integer between the min and max value
+export function Random(min, max = 0) {
+  if (max === 0) {
+    max = min
+    min = 0
+  }
+  return Math.floor(Math.random() * max) - Math.floor(Math.random() * min)
+}
+
+
+// even()
+// input no arguments
+// return true if number is even
+Object.defineProperty(Number.prototype, "even", {
+  value: function () {
+    return this % 2 === 0
+  }
+})
+
+// odd()
+// input no arguments
+// return true if number is odd
+Object.defineProperty(Number.prototype, "odd", {
+  value: function () {
+    return this % 2 === 1
+  }
+})
+
+// multipleOf(number)
+// input 1 integer
+// return true if number has no remainder when divided by number
+Object.defineProperty(Number.prototype, "multipleOf", {
+  value: function (num) {
+    return this % num === 0
+  }
+})
+
+/* ________________________________________________________________________________________________ */
+
 // ARRAY METHODS
 
 // select(arg = arrowFunction)
-// input arrow function as parameter that returns a boolean
+// input arrow function that returns a boolean as argument 
 // output an array with the values that evaluate to true
 Object.defineProperty(Array.prototype, "select", {
   value: function (arrowFunc = (el => el)) {
@@ -110,6 +153,24 @@ Object.defineProperty(Array.prototype, "occurence", {
       obj[value] = n
     })
     return obj
+  }
+})
+
+// sample(qtyOfValues, allowRepeatValues = false)
+// input 1 integer and 1 boolean value
+// output a single value or an array of values of randomly selected values within array
+Object.defineProperty(Array.prototype, "sample", {
+  value: function (qty = 1, repeat = false) {
+    const array = this.map(el => el)
+    const values = []
+    for (let n = 0; n < qty; n++) {
+      const index = Random(array.length)
+      values.push(array[index])
+      if (!repeat) {
+        array.splice(index, 1)
+      }
+    }
+    return values.length === 1 ? values[0] : values
   }
 })
 
