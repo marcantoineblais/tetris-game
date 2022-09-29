@@ -1,10 +1,18 @@
 @import url('./fonts/OpenSans/open-sans.scss');
+@import url('./fonts/Montserrat/montserrat.scss');
 @import url('./styles/App.scss');
 
 body {
     font-family: 'Open Sans';
     font-style: normal;
     font-size: 16px;
-    font-weight: 300;
+    font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: -1px; 
 }
 

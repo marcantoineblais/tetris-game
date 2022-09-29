@@ -1,7 +1,12 @@
 import React from "react"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
-const test = <p>Main Page</p>
+const test = (
+    <div>
+        <h1>App connected</h1>
+        <p>Main Page</p>
+    </div>
+)
 
 const App = () => {
     return (
