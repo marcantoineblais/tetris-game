@@ -6,6 +6,7 @@ import reducer from "./reducer"
 
 import App from "./components/App"
 import "./index.scss"
+import "./helpers"
 
 const container = document.getElementById('root')
 const root = ReactDOMClient.createRoot(container)
