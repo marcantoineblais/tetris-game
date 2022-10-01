@@ -33,15 +33,18 @@ Object.defineProperty(String.prototype, "occurence", {
   value: function () {
     const obj = {}
     this.toLowerCase().uniq().forEach((char) => {
-      let n = 0
-      this.toLowerCase().split("").forEach((el) => {
-        if (el === char) {
-          n += 1
-        }
-      })
-      obj[char] = n
+      obj[char] = this.toLowerCase().split("").select((el) => el === char).length
     })
     return obj
+  }
+})
+
+// toUrl(queryParamsObject, queryStartSymbol = "?", queryValueAssignementSymbol = "=", querySeparatorSymbol = "&")
+// input 1 object (with keys as params and values as values) as argument, optionnaly input 3 strings to change default URL builder symbols
+// output a string 
+Object.defineProperty(String.prototype, "toUrl", {
+  value: function (paramsObj = {}, qStart = "?", qAssign = "=", qSplit = "&") {
+    return this + paramsObj.toUrl("", qStart, qAssign, qSplit) 
   }
 })
 
@@ -97,13 +100,7 @@ Object.defineProperty(Number.prototype, "multipleOf", {
 // output an array with the values that evaluate to true
 Object.defineProperty(Array.prototype, "select", {
   value: function (arrowFunc = (el => el)) {
-    const values = []
-    this.forEach((el) => {
-      if (arrowFunc(el)) {
-        values.push(el)
-      }
-    })
-    return values
+    return this.filter((el) => arrowFunc(el))
   }
 })
 
@@ -111,14 +108,8 @@ Object.defineProperty(Array.prototype, "select", {
 // input arrow function that returns a boolean as argument
 // output an array without the values that evaluate to true
 Object.defineProperty(Array.prototype, "reject", {
-  value: function (arrowFunc = (arg) => arg) {
-    const values = []
-    this.forEach((el) => {
-      if (!arrowFunc(el)) {
-        values.push(el)
-      }
-    })
-    return values
+  value: function (arrowFunc = (el) => el) {
+    return this.filter((el) => !arrowFunc(el))
   }
 })
 
@@ -127,13 +118,13 @@ Object.defineProperty(Array.prototype, "reject", {
 // output an array of unique values
 Object.defineProperty(Array.prototype, "uniq", {
   value: function () {
-    const values = []
+    const array = []
     this.forEach((el) => {
-      if (!values.some((value) => el === value)) {
-        values.push(el)
+      if (array.every((uniqEl) => el !== uniqEl)) {
+        array.push(el)
       }
     })
-    return values
+    return array   
   }
 })
 
@@ -144,13 +135,7 @@ Object.defineProperty(Array.prototype, "occurence", {
   value: function () {
     const obj = {}
     this.uniq().forEach((value) => {
-      let n = 0
-      this.forEach((el) => {
-        if (el === value) {
-          n += 1
-        }
-      })
-      obj[value] = n
+      obj[value] = this.select((el) => el === value).length
     })
     return obj
   }
@@ -173,7 +158,6 @@ Object.defineProperty(Array.prototype, "sample", {
     return values.length === 1 ? values[0] : values
   }
 })
-
 
 /* ________________________________________________________________________________________________ */
 
@@ -247,7 +231,7 @@ Object.defineProperty(Object.prototype, "split", {
 // input 1 base URL (string) as argument, optionnaly input 3 strings to change default URL builder symbols
 // output a string 
 Object.defineProperty(Object.prototype, "toUrl", {
-  value: function (baseUrl, qStart = "?", qAssign = "=", qSplit = "&") {
+  value: function (baseUrl = "", qStart = "?", qAssign = "=", qSplit = "&") {
     return baseUrl + qStart + this.map((key, value) => [key, value].join(qAssign)).join(qSplit)
   }
 })

@@ -14,11 +14,4 @@ const store = configureStore({ reducer: reducer })
 
 root.render(<Provider store={store}><App /></Provider>)
 
-const query = {
-    factor: "white",
-    list: "orange",
-    num: 3,
-    fruit: "banada"
-}
-const url = query.toUrl("https://amazon.ca")
-console.log(url);
+console.log([1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6].uniq())
