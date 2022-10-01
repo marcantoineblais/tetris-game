@@ -7,7 +7,7 @@
 // output string with first character uppercased and other characters downcased
 Object.defineProperty(String.prototype, "capitalize", {
   value: function () {
-    return this.split("").map((l, i) => i === 0 ? l.toUpperCase() : l.toLowerCase()).join("")
+    return this[0].toUpperCase() + this.slice(1).toLowerCase()
   }
 })
 
@@ -18,7 +18,7 @@ Object.defineProperty(String.prototype, "uniq", {
   value: function () {
     const chars = []
     this.toLowerCase().split("").forEach((el) => {
-      if (!chars.some((char) => el.toLowerCase() === char.toLowerCase())) {
+      if (!chars.includes(el)) {
         chars.push(el.toLowerCase())
       }
     })
@@ -55,8 +55,8 @@ Object.defineProperty(String.prototype, "toUrl", {
 // Random(minValue, maxValue) or Random(maxValue)
 // input 1 or 2 integer; 1 integer will define the max value; 2 integer will define min and max
 // output 1 random integer between the min and max value
-export function Random(min, max = 0) {
-  if (max === 0) {
+export function Random(min, max = null) {
+  if (!max) {
     max = min
     min = 0
   }
@@ -120,7 +120,7 @@ Object.defineProperty(Array.prototype, "uniq", {
   value: function () {
     const array = []
     this.forEach((el) => {
-      if (array.every((uniqEl) => el !== uniqEl)) {
+      if (!array.includes(el)) {
         array.push(el)
       }
     })
@@ -164,46 +164,46 @@ Object.defineProperty(Array.prototype, "sample", {
 // OBJECT METHODS
 
 // map(arg = arrowFunction)
-// input arrow function that uses key, value and index as arguments and returns any types of values
+// input arrow function that uses key, value, index and array from which its called as arguments and returns any types of values
 // output an array with all values returned from arrow function (return an array of [key, value] if no arguments are inputed)
 Object.defineProperty(Object.prototype, "map", {
   value: function (arrowFunc = (key, value) => [key, value]) {
-    return Object.entries(this).map(([key, value], index) => arrowFunc(key, value, index))
+    return Object.entries(this).map(([key, value], index, array) => arrowFunc(key, value, index, array))
   }
 })
 
 // forEach(arg = arrowFunction)
-// input arrow function that uses key, value, index as arguments and perform some actions
+// input arrow function that uses key, value, index and array from which its called as arguments and perform some actions
 // output undefined
 Object.defineProperty(Object.prototype, "forEach", {
   value: function (arrowFunc = () => null) {
-    Object.entries(this).forEach(([key, value], index) => arrowFunc(key, value, index))
+    Object.entries(this).forEach(([key, value], index, array) => arrowFunc(key, value, index, array))
   }
 })
 
 // select(arg = arrowFunction)
-// input arrow function that uses key, value and index as arguments and returns a boolean
+// input arrow function that uses key, value, index and array from which its called as arguments and returns a boolean
 // output an object with key: value pairs that evaluate to true 
 Object.defineProperty(Object.prototype, "select", {
-  value: function (arrowFunc = (key, value) => value) {
-    const values = {}
-    this.forEach((key, value, index) => {
-      if (arrowFunc(key, value, index)) {
-        values[key] = value
+  value: function (arrowFunc = (_key, value) => value) {
+    const selectedElements = {}
+    this.forEach((key, value, index, array) => {
+      if (arrowFunc(key, value, index, array)) {
+        selectedElements[key] = value
       }
     })
-    return values
+    return selectedElements
   }
 })
 
 // reject(arg = arrowFunction)
-// input arrow function that uses key, value and index as arguments and returns a boolean
+// input arrow function that uses key, value, index and array as arguments and returns a boolean
 // output an object without the key: value pairs that evaluate to true
 Object.defineProperty(Object.prototype, "reject", {
   value: function (arrowFunc = (_key, value) => value) {
     const values = {}
-    this.forEach((key, value, index) => {
-      if (!arrowFunc(key, value, index)) {
+    this.forEach((key, value, index, array) => {
+      if (!arrowFunc(key, value, index, array)) {
         values[key] = value
       }
     })
