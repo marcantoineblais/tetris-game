@@ -13,3 +13,12 @@ const root = ReactDOMClient.createRoot(container)
 const store = configureStore({ reducer: reducer })
 
 root.render(<Provider store={store}><App /></Provider>)
+
+const query = {
+    factor: "white",
+    list: "orange",
+    num: 3,
+    fruit: "banada"
+}
+const url = query.toUrl("https://amazon.ca")
+console.log(url);

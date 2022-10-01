@@ -57,7 +57,7 @@ export function Random(min, max = 0) {
     max = min
     min = 0
   }
-  return Math.floor(Math.random() * max) - Math.floor(Math.random() * min)
+  return Math.floor(Math.random() * (max - min)) + min
 }
 
 
@@ -239,5 +239,15 @@ Object.defineProperty(Object.prototype, "split", {
       values.push(value)
     })
     return [keys, values]
+  }
+})
+
+
+// toUrl(baseUrl, queryStartSymbol = "?", queryValueAssignementSymbol = "=", querySeparatorSymbol = "&")
+// input 1 base URL (string) as argument, optionnaly input 3 strings to change default URL builder symbols
+// output a string 
+Object.defineProperty(Object.prototype, "toUrl", {
+  value: function (baseUrl, qStart = "?", qAssign = "=", qSplit = "&") {
+    return baseUrl + qStart + this.map((key, value) => [key, value].join(qAssign)).join(qSplit)
   }
 })
