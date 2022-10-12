@@ -100,3 +100,33 @@ export const split = (arg) => {
   })
   return [keys, values]
 }
+
+// random(min, max)
+// input 1 integer || 2 integers
+// output 1 random integer between 0 and max value || min and max value
+export const random = (min, max = null) => {
+  if (!max) {
+    max = min
+    min = 0
+  }
+  return (Math.floor(Math.random() * (max - min))) + min
+}
+
+
+// wait(milliseconds)
+// input 1 integer
+// output 1 fulfilled promise after set amount of millisecond
+export const wait = (time) => {
+  return new Promise((r) => setTimeout(r, time))
+}
+
+// promise()
+// input no argument
+// output a new simple resolved promise
+export const promise = (bool = true) => {
+  if (bool) {
+    return new Promise((f) => f)
+  }
+
+  return new Promise((_f, r) => r)
+}
