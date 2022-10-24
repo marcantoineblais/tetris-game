@@ -2,11 +2,27 @@
 @import url('./fonts/Montserrat/montserrat.scss');
 @import url('./styles/App.scss');
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  width: 100%;
+}
+
 body {
     font-family: 'Open Sans';
     font-style: normal;
     font-size: 16px;
     font-weight: 400;
+    height: 100%;
+    margin: 0;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {

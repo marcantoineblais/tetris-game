@@ -1,0 +1,11 @@
+.main-grid {
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+
+  .grid-space {
+    border: 1px solid black;
+  }
+}
