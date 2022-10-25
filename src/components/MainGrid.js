@@ -4,12 +4,26 @@ import { wait } from "../helpers"
 
 const MainGrid = ({ container }) => {
 
-  const [blockSize, setBlockSize] = useState(null) 
-  const [fallSpeed, setFallSpeed] = useState(100) 
+  // width and height of a block
+  const [blockSize, setBlockSize] = useState(null)
+  
+  // num of milliseconds to fall 1 block
+  const [fallSpeed, setFallSpeed] = useState(50)
+
+
   const [activePiece, setActivePiece] = useState(null)
   const [renderedActivePiece, setRenderedActivePiece] = useState(null)
-  const [activePieceCoord, setActivePieceCoord] = useState(null)
+  const [activePieceCoordX, setActivePieceCoordX] = useState(null)
+  const [activePieceCoordY, setActivePieceCoordY] = useState(null)
+  
   const [activePieceFalling, setActivePieceFalling] = useState(false)
+  const [moveLeft, setMoveLeft] = useState(false)
+  const [moveRight, setMoveRight] = useState(false)
+  const [moveDown, setMoveDown] = useState(false)
+
+  const [sideMovementInProgress, setSideMovementInProgress] = useState(false)
+  
+  
   const mainGridRef = useRef()
   const activePieceRef = useRef()
 
@@ -21,7 +35,7 @@ const MainGrid = ({ container }) => {
       mainGrid.style.width = container.current.clientWidth > 600 ? '600px' : container.current.clientWidth + 'px'
       let dimension
       if (mainGrid.clientWidth < mainGrid.clientHeight && mainGrid.clientHeight <= container.current.clientHeight) {
-        dimension = (mainGrid.clientWidth / 12).toString()
+        dimension = mainGrid.clientWidth / 12
         mainGrid.style.height = (dimension * 22).toString() + 'px'
       } else {
         dimension = (mainGrid.clientHeight / 22).toString()
@@ -49,6 +63,17 @@ const MainGrid = ({ container }) => {
       return
     }
 
+    const resetPiece = () => {
+      setRenderedActivePiece(null)
+      setActivePieceCoordX(null)
+      setActivePieceCoordY(null)
+      setMoveDown(false)
+      setMoveLeft(false)
+      setMoveRight(false)
+      setActivePiece(spawnPiece())
+    }
+
+    resetPiece()
     setActivePiece(spawnPiece())
   }, [activePiece])
 
@@ -58,7 +83,7 @@ const MainGrid = ({ container }) => {
       return
     }
 
-    const [renderedBlocks, blockCoordinates] = renderedPiece(activePiece, blockSize)
+    const [renderedBlocks, blockCoordinatesX, blockCoordinatesY] = renderedPiece(activePiece, blockSize)
     
     setRenderedActivePiece(
       <div ref={activePieceRef} style={{ position: 'absolute'}}>
@@ -66,18 +91,21 @@ const MainGrid = ({ container }) => {
       </div>
     )
     
-    setActivePieceCoord(blockCoordinates)
+    setActivePieceCoordX(blockCoordinatesX)
+    setActivePieceCoordY(blockCoordinatesY)
   }, [blockSize, activePiece])
 
 
   // ACTIVE PIECE FALL TIMER
   useEffect(() => {
-    if (!activePiece || !activePieceFalling || !activePieceCoord) {
+    if (!activePiece || !activePieceFalling || !activePieceCoordY) {
       return
     }
 
-    const checkForCollision = (coord) => {
-      if (coord.y === mainGridRef.current.clientHeight - blockSize) {
+    const checkForCollision = (blockBounds) => {
+
+      const mainGridBounds = mainGridRef.current.getBoundingClientRect()
+      if (blockBounds.bottom === mainGridBounds.bottom) {
         setActivePieceFalling(false)
         return true
       }
@@ -85,7 +113,7 @@ const MainGrid = ({ container }) => {
       let collision
       [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
         const spaceBounds = space.getBoundingClientRect()
-        if (spaceBounds.top - blockSize === coord.y) {
+        if (spaceBounds.top === blockBounds.bottom && spaceBounds.left <= blockBounds.left && spaceBounds.right >= blockBounds.right) {
           collision = true
         }
       })
@@ -95,26 +123,30 @@ const MainGrid = ({ container }) => {
 
     const fall = async () => {
       await wait(fallSpeed / blockSize)
-      const newCoord = []
+      
       let collision
-      activePieceCoord.forEach((coord) => {
-        if (checkForCollision(coord)) {
+      [].slice.call(activePieceRef.current.children).forEach((block) => {
+        if (checkForCollision(block.getBoundingClientRect())) {
           collision = true
         }
-        newCoord.push({ x: coord.x, y: coord.y + 1 })
       })
-
+      
       if (collision) {
+        await wait(100)
         setActivePieceFalling(false)
       } else {
-        setActivePieceCoord(newCoord)
+        const newCoordY = []
+        activePieceCoordY.forEach((coordY) => {
+          newCoordY.push(coordY + 1)
+        })
+        setActivePieceCoordY(newCoordY)
       }
     }
 
     if (activePieceFalling) {
       fall()
     }
-  }, [activePieceCoord, activePiece, activePieceFalling, blockSize, fallSpeed])
+  }, [activePieceCoordY, activePieceCoordX, activePiece, activePieceFalling, blockSize, fallSpeed])
 
 
   // START ACTIVE PIECE FALL TIMER
@@ -131,51 +163,199 @@ const MainGrid = ({ container }) => {
     startToFall()
   }, [renderedActivePiece, activePieceFalling])
 
+
   // UPDATE ACTIVE PIECE POSITION
   useEffect(() => {
-    if (!activePieceCoord || !renderedActivePiece || !activePieceFalling) {
+    if (!activePieceCoordY || !activePieceCoordX || !renderedActivePiece || !activePieceFalling) {
       return
     }
 
     [].slice.call(activePieceRef.current.children).forEach((block, i) => {
-      block.style.top = activePieceCoord[i].y.toString() + 'px'
+      block.style.left = activePieceCoordX[i].toString() + 'px'
+      block.style.top = activePieceCoordY[i].toString() + 'px'
     })
-  }, [activePieceCoord, activePieceRef, activePiece, activePieceFalling, renderedActivePiece])
+  }, [activePieceCoordY, activePieceCoordX, activePieceRef, activePiece, activePieceFalling, renderedActivePiece])
+
 
   // FIX STOPPED PIECE POSITION
   useEffect(() => {
     if (activePieceFalling || !activePiece || !activePieceRef.current) {
       return
     }
+  
+  [].slice.call(activePieceRef.current.children).forEach((block) => {
+    const blockBounds = block.getBoundingClientRect()
 
-    const resetPiece = () => {
-      setActivePiece(null)
-      setRenderedActivePiece(null)
-      setActivePieceCoord(null)
-      setActivePieceCoord(null)
-    }
-
-    [].slice.call(activePieceRef.current.children).forEach((block) => {
-      const currentSpace = block.getBoundingClientRect()
-      const coord = {
-        x: (currentSpace.left + currentSpace.right) / 2,
-        y: (currentSpace.top + currentSpace.bottom) / 2
-      }
-
-      const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
-        const spaceRect = space.getBoundingClientRect()
-        return (
-          spaceRect.left < coord.x && spaceRect.right > coord.x &&
-          spaceRect.top < coord.y && spaceRect.bottom > coord.y &&
-          !space.classList.contains('active-block')
+    const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
+      const spaceRect = space.getBoundingClientRect()
+      return (
+        spaceRect.left <= blockBounds.left && spaceRect.right >= blockBounds.right &&
+        spaceRect.top <= blockBounds.top && spaceRect.bottom >= blockBounds.bottom &&
+        !space.classList.contains('active-block')
         )
       }).pop()
+
       takenSpace.classList.add('taken', activePiece.color)
     })
-
-    resetPiece()
+    setActivePiece(null)
 
   }, [activePieceFalling, activePiece])
+
+
+  // DEFINE INPUTS BUFFER AND LISTENER
+  useEffect(() => {
+    if (!activePieceFalling) {
+      return
+    }
+
+    const bufferInput = (e) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          setMoveLeft(true)
+          setMoveRight(false)
+          break
+        case 'ArrowRight':
+          setMoveRight(true)
+          setMoveLeft(false)
+          break
+        case 'ArrowDown':
+          setMoveDown(true)
+          break
+        default:
+          break;
+      }
+    }
+
+    const manageKeyUpInput = (e) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          setMoveLeft(false)
+          break
+        case 'ArrowRight':
+          setMoveRight(false)
+          break
+        case 'ArrowDown':
+          setMoveDown(false)
+          break
+        default:
+          break;
+      }
+    }
+
+    window.addEventListener('keydown', bufferInput)
+    window.addEventListener('keyup', manageKeyUpInput)
+    
+    return () => {
+      window.removeEventListener('keydown', bufferInput)
+      window.removeEventListener('keyup', manageKeyUpInput)
+    }
+  }, [activePieceFalling])
+
+
+  //LEFT MOVEMENT
+  useEffect(() => {
+    if (!moveLeft || sideMovementInProgress || !renderedActivePiece) {
+      return
+    }
+
+    const checkForCollision = (blockBounds) => {
+      const mainGridBounds = mainGridRef.current.getBoundingClientRect()
+      if (blockBounds.left === mainGridBounds.left) {
+        return true
+      }
+
+      let collision
+      [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
+        const spaceBounds = space.getBoundingClientRect()
+        if (((spaceBounds.bottom >= blockBounds.bottom && spaceBounds.top < blockBounds.bottom) || 
+             (spaceBounds.bottom > blockBounds.top && spaceBounds.top <= blockBounds.top)) &&
+              spaceBounds.right === blockBounds.left) {
+          collision = true
+        }
+      })
+  
+      return collision
+    }
+
+    const movingLeft = async () => {
+      let collision
+      [].slice.call(activePieceRef.current.children).forEach((block) => {
+        if (checkForCollision(block.getBoundingClientRect())) {
+          collision = true
+        }
+      })
+
+      if (!collision) {
+        const newCoordX = []
+        activePieceCoordX.forEach(coordX => {
+          newCoordX.push(coordX - blockSize)
+        })
+        setActivePieceCoordX(newCoordX)
+        await wait(60)
+        setSideMovementInProgress(false)
+      } else {
+        await wait(fallSpeed / blockSize)
+        setSideMovementInProgress(false)
+      }
+    }
+    
+    setSideMovementInProgress(true)
+    movingLeft()
+
+  }, [moveLeft, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
+
+
+  //RIGHT MOVEMENT
+  useEffect(() => {
+    if (!moveRight || sideMovementInProgress || !renderedActivePiece) {
+      return
+    }
+
+    const checkForCollision = (blockBounds) => {
+      const mainGridBounds = mainGridRef.current.getBoundingClientRect()
+      if (blockBounds.right === mainGridBounds.right) {
+        return true
+      }
+
+      let collision
+      [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
+        const spaceBounds = space.getBoundingClientRect()
+        if (((spaceBounds.bottom >= blockBounds.bottom && spaceBounds.top < blockBounds.bottom) ||
+             (spaceBounds.bottom > blockBounds.top && spaceBounds.top <= blockBounds.top)) &&
+              spaceBounds.left === blockBounds.right) {
+          collision = true
+        }
+      })
+  
+      return collision
+    }
+
+    const movingRight = async () => {
+      let collision
+      [].slice.call(activePieceRef.current.children).forEach((block) => {
+        if (checkForCollision(block.getBoundingClientRect())) {
+          collision = true
+        }
+      })
+
+      if (!collision) {
+        const newCoordX = []
+        activePieceCoordX.forEach(coordX => {
+          newCoordX.push(coordX + blockSize)
+        })
+        setActivePieceCoordX(newCoordX)
+        await wait(60)
+        setSideMovementInProgress(false)
+      } else {
+        await wait(fallSpeed / blockSize)
+        setSideMovementInProgress(false)
+      }
+    }
+    
+    setSideMovementInProgress(true)
+    movingRight()
+
+  }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
 
   const renderedGridSpaces = () => {
     const gridSpaces = []
