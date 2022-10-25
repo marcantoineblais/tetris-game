@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from "react"
-import { createPieces } from "./gameAssets.js/pieces"
+import { spawnPiece, renderedPiece } from "./assets.js"
 import { wait } from "../helpers"
 
 const MainGrid = ({ container }) => {
 
   const [blockSize, setBlockSize] = useState(null) 
   const [fallSpeed, setFallSpeed] = useState(100) 
-  const [activePiece, setActivePiece] = useState(createPieces().straightPiece)
+  const [activePiece, setActivePiece] = useState(null)
   const [renderedActivePiece, setRenderedActivePiece] = useState(null)
   const [activePieceCoord, setActivePieceCoord] = useState(null)
-  const [activePieceFalling, setActivePieceFalling] = useState(true)
+  const [activePieceFalling, setActivePieceFalling] = useState(false)
   const mainGridRef = useRef()
   const activePieceRef = useRef()
 
@@ -43,6 +43,14 @@ const MainGrid = ({ container }) => {
     }
   }, [container])
 
+  // SPAWN RANDOM PIECE
+  useEffect(() => {
+    if (activePiece) {
+      return
+    }
+
+    setActivePiece(spawnPiece())
+  }, [activePiece])
 
   // RENDER ACTIVE PIECE
   useEffect(() => {
@@ -50,30 +58,14 @@ const MainGrid = ({ container }) => {
       return
     }
 
-    const renderedBlocks = []
-    const blockCoordinates = []
-    activePiece.coordinates.forEach((baseCoord, i) => {
-      const coord = {
-        x: baseCoord.x * blockSize,
-        y: baseCoord.y * blockSize
-      }
-      const style = {
-        width: blockSize.toString() + 'px',
-        height: blockSize.toString() + 'px',
-        left: coord.x.toString() + 'px',
-        top: coord.y.toString() + 'px'
-      }
-      const block = <div className={'active-block ' + activePiece.color} style={style} key={i}></div>
-      renderedBlocks.push(block)
-      blockCoordinates.push(coord)
-    })
-
+    const [renderedBlocks, blockCoordinates] = renderedPiece(activePiece, blockSize)
+    
     setRenderedActivePiece(
       <div ref={activePieceRef} style={{ position: 'absolute'}}>
         {renderedBlocks}
       </div>
     )
-
+    
     setActivePieceCoord(blockCoordinates)
   }, [blockSize, activePiece])
 
@@ -110,21 +102,42 @@ const MainGrid = ({ container }) => {
   }, [activePieceCoord, activePiece, activePieceFalling, blockSize, fallSpeed, container])
 
 
+  // START ACTIVE PIECE FALL TIMER
+  useEffect(() => {
+    if (!renderedActivePiece || activePieceFalling) {
+      return
+    }
+
+    const startToFall = async () => {
+      await wait(500)
+      setActivePieceFalling(true)
+    }
+
+    startToFall()
+  }, [renderedActivePiece, activePieceFalling])
+
   // UPDATE ACTIVE PIECE POSITION
   useEffect(() => {
-    if (!activePieceCoord || !activePieceRef.current || !activePieceFalling) {
+    if (!activePieceCoord || !renderedActivePiece || !activePieceFalling) {
       return
     }
 
     [].slice.call(activePieceRef.current.children).forEach((block, i) => {
       block.style.top = activePieceCoord[i].y.toString() + 'px'
     })
-  }, [activePieceCoord, activePieceRef, activePiece, activePieceFalling])
+  }, [activePieceCoord, activePieceRef, activePiece, activePieceFalling, renderedActivePiece])
 
   // FIX STOPPED PIECE POSITION
   useEffect(() => {
-    if (activePieceFalling || !activePiece) {
+    if (activePieceFalling || !activePiece || !activePieceRef.current) {
       return
+    }
+
+    const resetPiece = () => {
+      setActivePiece(null)
+      setRenderedActivePiece(null)
+      setActivePieceCoord(null)
+      setActivePieceCoord(null)
     }
 
     [].slice.call(activePieceRef.current.children).forEach((block) => {
@@ -132,7 +145,7 @@ const MainGrid = ({ container }) => {
       const coord = {
         x: (currentSpace.left + currentSpace.right) / 2,
         y: (currentSpace.top + currentSpace.bottom) / 2
-      };
+      }
 
       const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
         const spaceRect = space.getBoundingClientRect()
@@ -145,8 +158,8 @@ const MainGrid = ({ container }) => {
       takenSpace.classList.add('taken', activePiece.color)
     })
 
-    setActivePiece(null)
-    setRenderedActivePiece(null)
+    resetPiece()
+
   }, [activePieceFalling, activePiece])
 
   const renderedGridSpaces = () => {
