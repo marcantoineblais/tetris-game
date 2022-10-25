@@ -1,4 +1,5 @@
 .main-grid {
+  position: relative;
   margin: 0 auto;
   height: 100%;
   display: flex;
@@ -7,5 +8,13 @@
 
   .grid-space {
     border: 1px solid black;
+  }
+
+  .active-block {
+    position: absolute;
+  }
+
+  .pink {
+    background-color: pink;
   }
 }
