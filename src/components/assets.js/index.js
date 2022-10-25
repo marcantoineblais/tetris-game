@@ -26,7 +26,6 @@ export const spawnPiece = () => {
   ]
   const randomIndex = random(pieces.length)
   const randomPiece = pieces.filter((_v, i) => randomIndex === i).pop()
-  console.log(randomPiece);
   return randomPiece
 }
 

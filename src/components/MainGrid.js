@@ -77,29 +77,44 @@ const MainGrid = ({ container }) => {
     }
 
     const checkForCollision = (coord) => {
-      if (coord.y === mainGridRef.current.clientHeight - blockSize - 1 ) {
+      if (coord.y === mainGridRef.current.clientHeight - blockSize) {
         setActivePieceFalling(false)
         return true
       }
+
+      let collision
+      [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
+        const spaceBounds = space.getBoundingClientRect()
+        if (spaceBounds.top - blockSize === coord.y) {
+          collision = true
+        }
+      })
   
-      return false
+      return collision
     }
 
     const fall = async () => {
       await wait(fallSpeed / blockSize)
       const newCoord = []
+      let collision
       activePieceCoord.forEach((coord) => {
-        const collision = checkForCollision(coord)
-        if (!collision) {
-          newCoord.push({ x: coord.x, y: coord.y + 1 })
+        if (checkForCollision(coord)) {
+          collision = true
         }
+        newCoord.push({ x: coord.x, y: coord.y + 1 })
       })
-      setActivePieceCoord(newCoord)
+
+      if (collision) {
+        setActivePieceFalling(false)
+      } else {
+        setActivePieceCoord(newCoord)
+      }
     }
+
     if (activePieceFalling) {
       fall()
     }
-  }, [activePieceCoord, activePiece, activePieceFalling, blockSize, fallSpeed, container])
+  }, [activePieceCoord, activePiece, activePieceFalling, blockSize, fallSpeed])
 
 
   // START ACTIVE PIECE FALL TIMER
@@ -166,7 +181,7 @@ const MainGrid = ({ container }) => {
     const gridSpaces = []
     for (let y = 0; y < 22; y += 1) {
       for (let x = 0; x < 12; x += 1) {
-        gridSpaces.push(<div id={`${x}, ${y}`} className="grid-space empty" key={`${x}, ${y}`}></div>)
+        gridSpaces.push(<div id={`${x}, ${y}`} className="grid-space" key={`${x}, ${y}`}></div>)
       }
     }
 
