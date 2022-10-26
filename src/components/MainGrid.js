@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { spawnPiece, renderedPiece } from "./assets.js"
+import { spawnPiece } from "./assets.js"
 import { promise, wait } from "../helpers"
 
 const MainGrid = ({ container }) => {
@@ -9,7 +9,7 @@ const MainGrid = ({ container }) => {
   
   // num of milliseconds to fall 1 block
   const [fallSpeed, setFallSpeed] = useState(50)
-
+  const [dropRate, setDropRare] = useState(1)
 
   const [activePiece, setActivePiece] = useState(null)
   const [renderedActivePiece, setRenderedActivePiece] = useState(null)
@@ -73,16 +73,39 @@ const MainGrid = ({ container }) => {
       return
     }
 
-    const [renderedBlocks, blockCoordinatesX, blockCoordinatesY] = renderedPiece(activePiece, blockSize)
+    const renderedPiece = (activePiece, blockSize) => {
+      const blocks = []
+      activePiece.coordinates.forEach((baseCoord, i) => {
+        const coordX = baseCoord.x * blockSize
+        const coordY = baseCoord.y * blockSize
+        
+        const style = {
+          width: blockSize.toString() + 'px',
+          height: blockSize.toString() + 'px',
+          left: coordX.toString() + 'px',
+          top: coordY.toString() + 'px'
+        }
+        const block = <div className={'active-block ' + activePiece.color} style={style} key={i}></div>
+        blocks.push(block)
+      })
     
+      return blocks
+    }
+
+    const renderedBlocks = renderedPiece(activePiece, blockSize)
+    const coordX = activePiece.center.x * blockSize
+    const coordY = activePiece.center.y * blockSize
+    const top = coordY.toString() + 'px'
+    const left = coordX.toString() + 'px'
+
     setRenderedActivePiece(
-      <div ref={activePieceRef} style={{ position: 'absolute'}}>
+      <div ref={activePieceRef} className="active-container" style={{ position: 'absolute', top: top, left: left}}>
         {renderedBlocks}
       </div>
     )
 
-    setActivePieceCoordX(blockCoordinatesX)
-    setActivePieceCoordY(blockCoordinatesY)
+    setActivePieceCoordX(coordX)
+    setActivePieceCoordY(coordY)
     
   }, [blockSize, activePiece])
 
@@ -125,15 +148,7 @@ const MainGrid = ({ container }) => {
       return collision
     }
 
-    const setNewCoords = () => {
-      const newCoordY = []
-          activePieceCoordY.forEach((coordY) => {
-          newCoordY.push(coordY + 1)
-        })
-      setActivePieceCoordY(newCoordY)
-    }
-
-    const fall = async () => {
+    const canFall = async () => {
       await wait(fallSpeed / blockSize)
       
       let collision
@@ -155,23 +170,23 @@ const MainGrid = ({ container }) => {
         if (collision) {
           setActivePieceFalling(false)
         } else {
-          setNewCoords()
+          setActivePieceCoordY(activePieceCoordY + dropRate)
         }
 
       } else {
-        setNewCoords()
+        setActivePieceCoordY(activePieceCoordY + dropRate)
       }
       return promise()
     }
 
-    const fallingProgress = async () => {
+    const fall = async () => {
       setFallingInProgress(true)
-      await fall()
+      await canFall()
       setFallingInProgress(false)
     }
 
-    fallingProgress()
-  }, [activePieceCoordY, activePieceCoordX, activePiece, activePieceFalling, blockSize, fallSpeed, fallingInProgress])
+    fall()
+  }, [activePieceCoordY, activePieceCoordX, activePiece, activePieceFalling, blockSize, fallSpeed, fallingInProgress, dropRate])
 
 
   // UPDATE ACTIVE PIECE POSITION
@@ -180,10 +195,9 @@ const MainGrid = ({ container }) => {
       return
     }
 
-    [].slice.call(activePieceRef.current.children).forEach((block, i) => {
-      block.style.left = activePieceCoordX[i].toString() + 'px'
-      block.style.top = activePieceCoordY[i].toString() + 'px'
-    })
+    activePieceRef.current.style.left = activePieceCoordX.toString() + 'px'
+    activePieceRef.current.style.top = activePieceCoordY.toString() + 'px'
+
   }, [activePieceCoordY, activePieceCoordX, activePieceRef, activePiece, activePieceFalling, renderedActivePiece])
 
 
@@ -262,7 +276,7 @@ const MainGrid = ({ container }) => {
       return collision
     }
 
-    const testingCollision = async () => {
+    const canMoveLeft = async () => {
       let collision
       [].slice.call(activePieceRef.current.children).forEach((block) => {
         if (checkForCollision(block.getBoundingClientRect())) {
@@ -270,12 +284,8 @@ const MainGrid = ({ container }) => {
         }
       })
 
-      if (!collision) {
-        const newCoordX = []
-        activePieceCoordX.forEach(coordX => {
-          newCoordX.push(coordX - blockSize)
-        })
-        setActivePieceCoordX(newCoordX)
+      if (!collision) {  
+        setActivePieceCoordX(activePieceCoordX - blockSize)
         await wait(60)
       } else {
         await wait(fallSpeed / blockSize)
@@ -286,7 +296,7 @@ const MainGrid = ({ container }) => {
     
     const movingLeft = async () => {
       setSideMovementInProgress(true)
-      await testingCollision()
+      await canMoveLeft()
       setSideMovementInProgress(false)
     }
 
@@ -319,7 +329,7 @@ const MainGrid = ({ container }) => {
       return collision
     }
 
-    const testingCollision = async () => {
+    const canMoveRight = async () => {
       let collision
       [].slice.call(activePieceRef.current.children).forEach((block) => {
         if (checkForCollision(block.getBoundingClientRect())) {
@@ -328,11 +338,7 @@ const MainGrid = ({ container }) => {
       })
 
       if (!collision) {
-        const newCoordX = []
-        activePieceCoordX.forEach(coordX => {
-          newCoordX.push(coordX + blockSize)
-        })
-        setActivePieceCoordX(newCoordX)
+        setActivePieceCoordX(activePieceCoordX + blockSize)
         await wait(60)
         setSideMovementInProgress(false)
       } else {
@@ -343,7 +349,7 @@ const MainGrid = ({ container }) => {
     
     const movingRight = async () => {
       setSideMovementInProgress(true)
-      await testingCollision()
+      await canMoveRight()
       setSideMovementInProgress(false)
     }
 

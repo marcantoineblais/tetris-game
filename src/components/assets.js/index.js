@@ -1,4 +1,3 @@
-import React from "react"
 import { random } from "../../helpers"
 
 export const spawnPiece = () => {
@@ -6,58 +5,38 @@ export const spawnPiece = () => {
     {
       name: 'straightPiece',
       color: 'pink',
+      center: { x: 6.5, y: 2.5 },
       coordinates: [
-        { x: 6, y: 3 },
-        { x: 6, y: 2 },
-        { x: 6, y: 1 },
-        { x: 6, y: 0 }
+        { x: -0.5, y: 0.5 },
+        { x: -0.5, y: -0.5 },
+        { x: -0.5, y: -1.5 },
+        { x: -0.5, y: -2.5 }
       ],
     },
     {
       name: 'lPiece',
       color: 'orange',
+      center: { x: 6.5, y: 2.5 },
       coordinates: [
-        { x: 7, y: 2},
-        { x: 6, y: 2},
-        { x: 6, y: 1},
-        { x: 6, y: 0}
+        { x: 0.5, y: -0.5},
+        { x: -0.5, y: -0.5},
+        { x: -0.5, y: -1.5},
+        { x: -0.5, y: -2.5}
       ]
     },
     {
       name: 'revLPiece',
       color: 'purple',
+      center: { x: 6.5, y: 2.5 },
       coordinates: [
-        { x: 5, y: 2},
-        { x: 6, y: 2},
-        { x: 6, y: 1},
-        { x: 6, y: 0}
+        { x: -1.5, y: -0.5},
+        { x: -0.5, y: -0.5},
+        { x: -0.5, y: -1.5},
+        { x: -0.5, y: -2.5}
       ]
     }
   ]
   const randomIndex = random(pieces.length)
   const randomPiece = pieces.filter((_v, i) => randomIndex === i).pop()
   return randomPiece
-}
-
-export const renderedPiece = (activePiece, blockSize) => {
-  const blocks = []
-  const coordinatesX = []
-  const coordinatesY = []
-  activePiece.coordinates.forEach((baseCoord, i) => {
-    const coordX = baseCoord.x * blockSize
-    const coordY = baseCoord.y * blockSize
-    
-    const style = {
-      width: blockSize.toString() + 'px',
-      height: blockSize.toString() + 'px',
-      left: coordX.toString() + 'px',
-      top: coordY.toString() + 'px'
-    }
-    const block = <div className={'active-block ' + activePiece.color} style={style} key={i}></div>
-    blocks.push(block)
-    coordinatesX.push(coordX)
-    coordinatesY.push(coordY)
-  })
-
-  return [blocks, coordinatesX, coordinatesY]
 }
