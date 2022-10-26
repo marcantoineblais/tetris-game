@@ -20,6 +20,8 @@ const MainGrid = ({ container }) => {
   const [moveLeft, setMoveLeft] = useState(false)
   const [moveRight, setMoveRight] = useState(false)
   const [moveDown, setMoveDown] = useState(false)
+  const [rotation, setRotation] = useState(0)
+
 
   const [sideMovementInProgress, setSideMovementInProgress] = useState(false)
   const [fallingInProgress, setFallingInProgress] = useState(false)
@@ -33,19 +35,22 @@ const MainGrid = ({ container }) => {
   useEffect(() => {
     const setMainGridSpacesDimensions = () => {
       const mainGrid = mainGridRef.current
+      console.log(mainGrid.clientWidth);
       mainGrid.style.width = container.current.clientWidth > 600 ? '600px' : container.current.clientWidth + 'px'
       let dimension
       if (mainGrid.clientWidth < mainGrid.clientHeight && mainGrid.clientHeight <= container.current.clientHeight) {
-        dimension = mainGrid.clientWidth / 12
+        dimension = Math.floor(mainGrid.clientWidth / 12)
+        mainGrid.style.width = (dimension * 12).toString() + 'px'
         mainGrid.style.height = (dimension * 22).toString() + 'px'
       } else {
-        dimension = (mainGrid.clientHeight / 22).toString()
+        dimension = Math.floor(mainGrid.clientHeight / 22)
         mainGrid.style.width = (dimension * 12).toString() + 'px'
+        mainGrid.style.height = (dimension * 22).toString() + 'px'
       }
       const mainGridSpaces = [].slice.call(mainGridRef.current.children)
       mainGridSpaces.forEach(el => {
-        el.style.width = dimension + 'px'
-        el.style.height = dimension + 'px'
+        el.style.width = dimension.toString() + 'px'
+        el.style.height = dimension.toString() + 'px'
       })
       setBlockSize(dimension)
     }
@@ -236,6 +241,9 @@ const MainGrid = ({ container }) => {
         case 'ArrowDown':
           setMoveDown(false)
           break
+        case ' ':
+          setRotation((rotation + 90) % 360)
+          break
         default:
           break;
       }
@@ -248,7 +256,7 @@ const MainGrid = ({ container }) => {
       window.removeEventListener('keydown', bufferInput)
       window.removeEventListener('keyup', manageKeyUpInput)
     }
-  }, [activePieceFalling])
+  }, [activePieceFalling, rotation])
 
 
   //LEFT MOVEMENT
@@ -358,6 +366,17 @@ const MainGrid = ({ container }) => {
   }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
 
 
+  // ROTATION MOVEMENT
+  useEffect(() => {
+    if (!activePiece || !activePieceRef.current || !activePieceFalling) {
+      return
+    }
+
+    activePieceRef.current.style.transform = `rotate(${rotation}deg)`
+    
+  }, [activePiece, activePieceFalling, activePieceRef, rotation])
+
+ 
   // FIX STOPPED PIECE POSITION
   useEffect(() => {
     if (activePieceFalling || !activePiece || !activePieceRef.current) {
@@ -372,6 +391,7 @@ const MainGrid = ({ container }) => {
         setMoveLeft(false)
         setMoveRight(false)
         setMoveDown(false)
+        setRotation(0)
         return promise()
       }
 
@@ -379,7 +399,6 @@ const MainGrid = ({ container }) => {
       setActivePiece(null)
     }
 
-    
     [].slice.call(activePieceRef.current.children).forEach((block) => {
       const blockBounds = block.getBoundingClientRect()
       
