@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import { spawnPiece, renderedPiece } from "./assets.js"
-import { wait } from "../helpers"
+import { promise, wait } from "../helpers"
 
 const MainGrid = ({ container }) => {
 
@@ -22,6 +22,7 @@ const MainGrid = ({ container }) => {
   const [moveDown, setMoveDown] = useState(false)
 
   const [sideMovementInProgress, setSideMovementInProgress] = useState(false)
+  const [fallingInProgress, setFallingInProgress] = useState(false)
   
   
   const mainGridRef = useRef()
@@ -63,17 +64,6 @@ const MainGrid = ({ container }) => {
       return
     }
 
-    const resetPiece = () => {
-      setRenderedActivePiece(null)
-      setActivePieceCoordX(null)
-      setActivePieceCoordY(null)
-      setMoveDown(false)
-      setMoveLeft(false)
-      setMoveRight(false)
-      setActivePiece(spawnPiece())
-    }
-
-    resetPiece()
     setActivePiece(spawnPiece())
   }, [activePiece])
 
@@ -90,23 +80,37 @@ const MainGrid = ({ container }) => {
         {renderedBlocks}
       </div>
     )
-    
+
     setActivePieceCoordX(blockCoordinatesX)
     setActivePieceCoordY(blockCoordinatesY)
+    
   }, [blockSize, activePiece])
+
+
+  // START ACTIVE PIECE FALL TIMER
+  useEffect(() => {
+    if (!renderedActivePiece || activePieceFalling || fallingInProgress) {
+      return
+    }
+
+    const startToFall = async () => {
+      await wait(500)
+      setActivePieceFalling(true)
+    }
+
+    startToFall()
+  }, [renderedActivePiece, activePieceFalling, fallingInProgress])
 
 
   // ACTIVE PIECE FALL TIMER
   useEffect(() => {
-    if (!activePiece || !activePieceFalling || !activePieceCoordY) {
+    if (!activePiece || !activePieceFalling || !activePieceCoordY || fallingInProgress) {
       return
     }
 
     const checkForCollision = (blockBounds) => {
-
       const mainGridBounds = mainGridRef.current.getBoundingClientRect()
       if (blockBounds.bottom === mainGridBounds.bottom) {
-        setActivePieceFalling(false)
         return true
       }
 
@@ -121,6 +125,14 @@ const MainGrid = ({ container }) => {
       return collision
     }
 
+    const setNewCoords = () => {
+      const newCoordY = []
+          activePieceCoordY.forEach((coordY) => {
+          newCoordY.push(coordY + 1)
+        })
+      setActivePieceCoordY(newCoordY)
+    }
+
     const fall = async () => {
       await wait(fallSpeed / blockSize)
       
@@ -133,40 +145,38 @@ const MainGrid = ({ container }) => {
       
       if (collision) {
         await wait(100)
-        setActivePieceFalling(false)
-      } else {
-        const newCoordY = []
-        activePieceCoordY.forEach((coordY) => {
-          newCoordY.push(coordY + 1)
+        collision = false;
+        [].slice.call(activePieceRef.current.children).forEach((block) => {
+          if (checkForCollision(block.getBoundingClientRect())) {
+            collision = true
+          }
         })
-        setActivePieceCoordY(newCoordY)
+        
+        if (collision) {
+          setActivePieceFalling(false)
+        } else {
+          setNewCoords()
+        }
+
+      } else {
+        setNewCoords()
       }
+      return promise()
     }
 
-    if (activePieceFalling) {
-      fall()
-    }
-  }, [activePieceCoordY, activePieceCoordX, activePiece, activePieceFalling, blockSize, fallSpeed])
-
-
-  // START ACTIVE PIECE FALL TIMER
-  useEffect(() => {
-    if (!renderedActivePiece || activePieceFalling) {
-      return
+    const fallingProgress = async () => {
+      setFallingInProgress(true)
+      await fall()
+      setFallingInProgress(false)
     }
 
-    const startToFall = async () => {
-      await wait(500)
-      setActivePieceFalling(true)
-    }
-
-    startToFall()
-  }, [renderedActivePiece, activePieceFalling])
+    fallingProgress()
+  }, [activePieceCoordY, activePieceCoordX, activePiece, activePieceFalling, blockSize, fallSpeed, fallingInProgress])
 
 
   // UPDATE ACTIVE PIECE POSITION
   useEffect(() => {
-    if (!activePieceCoordY || !activePieceCoordX || !renderedActivePiece || !activePieceFalling) {
+    if (!activePieceCoordY || !activePieceCoordX || !renderedActivePiece || !activePieceFalling || !activePiece) {
       return
     }
 
@@ -175,31 +185,6 @@ const MainGrid = ({ container }) => {
       block.style.top = activePieceCoordY[i].toString() + 'px'
     })
   }, [activePieceCoordY, activePieceCoordX, activePieceRef, activePiece, activePieceFalling, renderedActivePiece])
-
-
-  // FIX STOPPED PIECE POSITION
-  useEffect(() => {
-    if (activePieceFalling || !activePiece || !activePieceRef.current) {
-      return
-    }
-  
-  [].slice.call(activePieceRef.current.children).forEach((block) => {
-    const blockBounds = block.getBoundingClientRect()
-
-    const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
-      const spaceRect = space.getBoundingClientRect()
-      return (
-        spaceRect.left <= blockBounds.left && spaceRect.right >= blockBounds.right &&
-        spaceRect.top <= blockBounds.top && spaceRect.bottom >= blockBounds.bottom &&
-        !space.classList.contains('active-block')
-        )
-      }).pop()
-
-      takenSpace.classList.add('taken', activePiece.color)
-    })
-    setActivePiece(null)
-
-  }, [activePieceFalling, activePiece])
 
 
   // DEFINE INPUTS BUFFER AND LISTENER
@@ -277,7 +262,7 @@ const MainGrid = ({ container }) => {
       return collision
     }
 
-    const movingLeft = async () => {
+    const testingCollision = async () => {
       let collision
       [].slice.call(activePieceRef.current.children).forEach((block) => {
         if (checkForCollision(block.getBoundingClientRect())) {
@@ -292,16 +277,20 @@ const MainGrid = ({ container }) => {
         })
         setActivePieceCoordX(newCoordX)
         await wait(60)
-        setSideMovementInProgress(false)
       } else {
         await wait(fallSpeed / blockSize)
-        setSideMovementInProgress(false)
       }
+
+      return promise()
     }
     
-    setSideMovementInProgress(true)
-    movingLeft()
+    const movingLeft = async () => {
+      setSideMovementInProgress(true)
+      await testingCollision()
+      setSideMovementInProgress(false)
+    }
 
+    movingLeft()
   }, [moveLeft, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
 
 
@@ -330,7 +319,7 @@ const MainGrid = ({ container }) => {
       return collision
     }
 
-    const movingRight = async () => {
+    const testingCollision = async () => {
       let collision
       [].slice.call(activePieceRef.current.children).forEach((block) => {
         if (checkForCollision(block.getBoundingClientRect())) {
@@ -352,10 +341,56 @@ const MainGrid = ({ container }) => {
       }
     }
     
-    setSideMovementInProgress(true)
+    const movingRight = async () => {
+      setSideMovementInProgress(true)
+      await testingCollision()
+      setSideMovementInProgress(false)
+    }
+
     movingRight()
 
   }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
+
+
+  // FIX STOPPED PIECE POSITION
+  useEffect(() => {
+    if (activePieceFalling || !activePiece || !activePieceRef.current) {
+      return
+    }
+
+    const resetPiece = async () => {
+      const resetValue = () => {
+        setRenderedActivePiece(null)
+        setActivePieceCoordX(null)
+        setActivePieceCoordY(null)
+        setMoveLeft(false)
+        setMoveRight(false)
+        setMoveDown(false)
+        return promise()
+      }
+
+      await resetValue()
+      setActivePiece(null)
+    }
+
+    
+    [].slice.call(activePieceRef.current.children).forEach((block) => {
+      const blockBounds = block.getBoundingClientRect()
+      
+      const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
+        const spaceRect = space.getBoundingClientRect()
+        return (
+          spaceRect.left <= blockBounds.left && spaceRect.right >= blockBounds.right &&
+          spaceRect.top <= blockBounds.top && spaceRect.bottom >= blockBounds.bottom &&
+          !space.classList.contains('active-block')
+          )
+      }).pop()
+        
+      takenSpace.classList.add('taken', activePiece.color)
+    })
+      
+    resetPiece()
+  }, [activePieceFalling, activePiece])
 
   const renderedGridSpaces = () => {
     const gridSpaces = []

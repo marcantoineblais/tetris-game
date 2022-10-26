@@ -125,8 +125,8 @@ export const wait = (time) => {
 // output a new simple resolved promise
 export const promise = (bool = true) => {
   if (bool) {
-    return new Promise((f) => f)
+    return new Promise((f) => f('done'))
   }
 
-  return new Promise((_f, r) => r)
+  return new Promise((_f, r) => r('error'))
 }
