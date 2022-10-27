@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react"
-import { spawnPiece } from "./assets.js"
+import { spawnPiece } from "./assets"
 import { promise, wait } from "../helpers"
+import useMoveLeft from "./mouvements/useMoveLeft"
+import useMoveRight from "./mouvements/useMoveRight"
+import useRotation from "./mouvements/useRotation"
 
 const MainGrid = ({ container }) => {
 
@@ -8,8 +11,8 @@ const MainGrid = ({ container }) => {
   const [blockSize, setBlockSize] = useState(null)
   
   // num of milliseconds to fall 1 block
-  const [fallSpeed, setFallSpeed] = useState(50)
-  const [dropRate, setDropRare] = useState(1)
+  const [fallSpeed, setFallSpeed] = useState(750)
+  const [dropRate, setDropRate] = useState(1)
 
   const [activePiece, setActivePiece] = useState(null)
   const [renderedActivePiece, setRenderedActivePiece] = useState(null)
@@ -17,14 +20,17 @@ const MainGrid = ({ container }) => {
   const [activePieceCoordY, setActivePieceCoordY] = useState(null)
   
   const [activePieceFalling, setActivePieceFalling] = useState(false)
-  const [moveLeft, setMoveLeft] = useState(false)
-  const [moveRight, setMoveRight] = useState(false)
+  const [moveLeft, setMoveLeft, movingLeft] = useMoveLeft(false)
+  const [moveRight, setMoveRight, movingRight] = useMoveRight(false)
   const [moveDown, setMoveDown] = useState(false)
-  const [rotation, setRotation] = useState(0)
-
+  const [rotation, setRotation, rotate] = useRotation(0)
 
   const [sideMovementInProgress, setSideMovementInProgress] = useState(false)
+  const [rotationInProgress, setRotationInProgress] = useState(false)
   const [fallingInProgress, setFallingInProgress] = useState(false)
+    
+
+
   
   
   const mainGridRef = useRef()
@@ -35,7 +41,6 @@ const MainGrid = ({ container }) => {
   useEffect(() => {
     const setMainGridSpacesDimensions = () => {
       const mainGrid = mainGridRef.current
-      console.log(mainGrid.clientWidth);
       mainGrid.style.width = container.current.clientWidth > 600 ? '600px' : container.current.clientWidth + 'px'
       let dimension
       if (mainGrid.clientWidth < mainGrid.clientHeight && mainGrid.clientHeight <= container.current.clientHeight) {
@@ -242,7 +247,7 @@ const MainGrid = ({ container }) => {
           setMoveDown(false)
           break
         case ' ':
-          setRotation((rotation + 90) % 360)
+          setRotation(true)
           break
         default:
           break;
@@ -256,7 +261,7 @@ const MainGrid = ({ container }) => {
       window.removeEventListener('keydown', bufferInput)
       window.removeEventListener('keyup', manageKeyUpInput)
     }
-  }, [activePieceFalling, rotation])
+  }, [activePieceFalling, setMoveLeft, setMoveRight, setRotation])
 
 
   //LEFT MOVEMENT
@@ -265,51 +270,18 @@ const MainGrid = ({ container }) => {
       return
     }
 
-    const checkForCollision = (blockBounds) => {
-      const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-      if (blockBounds.left === mainGridBounds.left) {
-        return true
-      }
-
-      let collision
-      [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
-        const spaceBounds = space.getBoundingClientRect()
-        if (((spaceBounds.bottom >= blockBounds.bottom && spaceBounds.top < blockBounds.bottom) || 
-             (spaceBounds.bottom > blockBounds.top && spaceBounds.top <= blockBounds.top)) &&
-              spaceBounds.right === blockBounds.left) {
-          collision = true
-        }
-      })
-  
-      return collision
-    }
-
-    const canMoveLeft = async () => {
-      let collision
-      [].slice.call(activePieceRef.current.children).forEach((block) => {
-        if (checkForCollision(block.getBoundingClientRect())) {
-          collision = true
-        }
-      })
-
-      if (!collision) {  
-        setActivePieceCoordX(activePieceCoordX - blockSize)
-        await wait(60)
-      } else {
-        await wait(fallSpeed / blockSize)
-      }
-
-      return promise()
-    }
-    
-    const movingLeft = async () => {
+    const movement = async () => {
       setSideMovementInProgress(true)
-      await canMoveLeft()
+      if (movingLeft(mainGridRef, activePieceRef)) {
+        setActivePieceCoordX(activePieceCoordX - blockSize)
+      }
+      await wait(64)
       setSideMovementInProgress(false)
     }
 
-    movingLeft()
-  }, [moveLeft, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
+    movement()
+
+  }, [moveLeft, movingLeft, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
 
 
   //RIGHT MOVEMENT
@@ -317,67 +289,39 @@ const MainGrid = ({ container }) => {
     if (!moveRight || sideMovementInProgress || !renderedActivePiece) {
       return
     }
-
-    const checkForCollision = (blockBounds) => {
-      const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-      if (blockBounds.right === mainGridBounds.right) {
-        return true
-      }
-
-      let collision
-      [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
-        const spaceBounds = space.getBoundingClientRect()
-        if (((spaceBounds.bottom >= blockBounds.bottom && spaceBounds.top < blockBounds.bottom) ||
-             (spaceBounds.bottom > blockBounds.top && spaceBounds.top <= blockBounds.top)) &&
-              spaceBounds.left === blockBounds.right) {
-          collision = true
-        }
-      })
-  
-      return collision
-    }
-
-    const canMoveRight = async () => {
-      let collision
-      [].slice.call(activePieceRef.current.children).forEach((block) => {
-        if (checkForCollision(block.getBoundingClientRect())) {
-          collision = true
-        }
-      })
-
-      if (!collision) {
-        setActivePieceCoordX(activePieceCoordX + blockSize)
-        await wait(60)
-        setSideMovementInProgress(false)
-      } else {
-        await wait(fallSpeed / blockSize)
-        setSideMovementInProgress(false)
-      }
-    }
-    
-    const movingRight = async () => {
+    const movement = async () => {
       setSideMovementInProgress(true)
-      await canMoveRight()
+      if (movingRight(mainGridRef, activePieceRef)) {
+        setActivePieceCoordX(activePieceCoordX + blockSize)
+      }
+      await wait(64)
       setSideMovementInProgress(false)
     }
 
-    movingRight()
+    movement()
 
-  }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
+  }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece, movingRight])
 
 
   // ROTATION MOVEMENT
   useEffect(() => {
-    if (!activePiece || !activePieceRef.current || !activePieceFalling) {
+    if (!activePieceRef.current || !activePieceFalling || !rotation || rotationInProgress) {
       return
     }
-
-    activePieceRef.current.style.transform = `rotate(${rotation}deg)`
     
-  }, [activePiece, activePieceFalling, activePieceRef, rotation])
+    const movement = async () => {
+      setRotationInProgress(true)
+      rotate(mainGridRef, activePieceRef)
+      await wait(64)
+      setRotationInProgress(false)
+      setRotation(false)
+    }
+    
+    movement()
+  }, [activePieceFalling, activePieceRef, rotation, rotate, rotationInProgress, setRotation])
 
  
-  // FIX STOPPED PIECE POSITION
+  // // FIX STOPPED PIECE POSITION
   useEffect(() => {
     if (activePieceFalling || !activePiece || !activePieceRef.current) {
       return
@@ -391,7 +335,7 @@ const MainGrid = ({ container }) => {
         setMoveLeft(false)
         setMoveRight(false)
         setMoveDown(false)
-        setRotation(0)
+        // setRotation(0)
         return promise()
       }
 
