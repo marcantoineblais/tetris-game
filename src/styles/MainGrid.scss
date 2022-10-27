@@ -5,6 +5,8 @@
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
+  border-radius: 8px;
+  overflow: hidden;
 
   .grid-space {
     border: 1px solid black;

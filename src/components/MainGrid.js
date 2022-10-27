@@ -3,6 +3,7 @@ import { spawnPiece } from "./assets"
 import { promise, wait } from "../helpers"
 import useMoveLeft from "./mouvements/useMoveLeft"
 import useMoveRight from "./mouvements/useMoveRight"
+import useMoveDown from "./mouvements/useMoveDown"
 import useRotation from "./mouvements/useRotation"
 
 const MainGrid = ({ container }) => {
@@ -22,17 +23,13 @@ const MainGrid = ({ container }) => {
   const [activePieceFalling, setActivePieceFalling] = useState(false)
   const [moveLeft, setMoveLeft, movingLeft] = useMoveLeft(false)
   const [moveRight, setMoveRight, movingRight] = useMoveRight(false)
-  const [moveDown, setMoveDown] = useState(false)
+  const [moveDown, setMoveDown, movingDown] = useMoveDown(false)
   const [rotation, setRotation, rotate] = useRotation(0)
 
   const [sideMovementInProgress, setSideMovementInProgress] = useState(false)
+  const [downMovementInProgress, setDownMovementInProgress] = useState(false)
   const [rotationInProgress, setRotationInProgress] = useState(false)
-  const [fallingInProgress, setFallingInProgress] = useState(false)
-    
 
-
-  
-  
   const mainGridRef = useRef()
   const activePieceRef = useRef()
 
@@ -44,11 +41,11 @@ const MainGrid = ({ container }) => {
       mainGrid.style.width = container.current.clientWidth > 600 ? '600px' : container.current.clientWidth + 'px'
       let dimension
       if (mainGrid.clientWidth < mainGrid.clientHeight && mainGrid.clientHeight <= container.current.clientHeight) {
-        dimension = Math.floor(mainGrid.clientWidth / 12)
+        dimension = Math.floor(mainGrid.clientWidth / 120) * 10
         mainGrid.style.width = (dimension * 12).toString() + 'px'
         mainGrid.style.height = (dimension * 22).toString() + 'px'
       } else {
-        dimension = Math.floor(mainGrid.clientHeight / 22)
+        dimension = Math.floor(mainGrid.clientHeight / 220) * 10
         mainGrid.style.width = (dimension * 12).toString() + 'px'
         mainGrid.style.height = (dimension * 22).toString() + 'px'
       }
@@ -122,7 +119,7 @@ const MainGrid = ({ container }) => {
 
   // START ACTIVE PIECE FALL TIMER
   useEffect(() => {
-    if (!renderedActivePiece || activePieceFalling || fallingInProgress) {
+    if (!renderedActivePiece || activePieceFalling || downMovementInProgress) {
       return
     }
 
@@ -132,71 +129,7 @@ const MainGrid = ({ container }) => {
     }
 
     startToFall()
-  }, [renderedActivePiece, activePieceFalling, fallingInProgress])
-
-
-  // ACTIVE PIECE FALL TIMER
-  useEffect(() => {
-    if (!activePiece || !activePieceFalling || !activePieceCoordY || fallingInProgress) {
-      return
-    }
-
-    const checkForCollision = (blockBounds) => {
-      const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-      if (blockBounds.bottom === mainGridBounds.bottom) {
-        return true
-      }
-
-      let collision
-      [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
-        const spaceBounds = space.getBoundingClientRect()
-        if (spaceBounds.top === blockBounds.bottom && spaceBounds.left <= blockBounds.left && spaceBounds.right >= blockBounds.right) {
-          collision = true
-        }
-      })
-  
-      return collision
-    }
-
-    const canFall = async () => {
-      await wait(fallSpeed / blockSize)
-      
-      let collision
-      [].slice.call(activePieceRef.current.children).forEach((block) => {
-        if (checkForCollision(block.getBoundingClientRect())) {
-          collision = true
-        }
-      })
-      
-      if (collision) {
-        await wait(100)
-        collision = false;
-        [].slice.call(activePieceRef.current.children).forEach((block) => {
-          if (checkForCollision(block.getBoundingClientRect())) {
-            collision = true
-          }
-        })
-        
-        if (collision) {
-          setActivePieceFalling(false)
-        } else {
-          setActivePieceCoordY(activePieceCoordY + dropRate)
-        }
-
-      } else {
-        setActivePieceCoordY(activePieceCoordY + dropRate)
-      }
-      return promise()
-    }
-
-    const fall = async () => {
-      setFallingInProgress(true)
-      await canFall()
-      setFallingInProgress(false)
-    }
-
-    fall()
-  }, [activePieceCoordY, activePieceCoordX, activePiece, activePieceFalling, blockSize, fallSpeed, fallingInProgress, dropRate])
+  }, [renderedActivePiece, activePieceFalling, downMovementInProgress])
 
 
   // UPDATE ACTIVE PIECE POSITION
@@ -213,9 +146,6 @@ const MainGrid = ({ container }) => {
 
   // DEFINE INPUTS BUFFER AND LISTENER
   useEffect(() => {
-    if (!activePieceFalling) {
-      return
-    }
 
     const bufferInput = (e) => {
       switch (e.key) {
@@ -261,7 +191,7 @@ const MainGrid = ({ container }) => {
       window.removeEventListener('keydown', bufferInput)
       window.removeEventListener('keyup', manageKeyUpInput)
     }
-  }, [activePieceFalling, setMoveLeft, setMoveRight, setRotation])
+  }, [activePieceFalling, setMoveLeft, setMoveRight, setRotation, setMoveDown])
 
 
   //LEFT MOVEMENT
@@ -274,8 +204,8 @@ const MainGrid = ({ container }) => {
       setSideMovementInProgress(true)
       if (movingLeft(mainGridRef, activePieceRef)) {
         setActivePieceCoordX(activePieceCoordX - blockSize)
+        await wait(64)
       }
-      await wait(64)
       setSideMovementInProgress(false)
     }
 
@@ -293,14 +223,44 @@ const MainGrid = ({ container }) => {
       setSideMovementInProgress(true)
       if (movingRight(mainGridRef, activePieceRef)) {
         setActivePieceCoordX(activePieceCoordX + blockSize)
+        await wait(64)
       }
-      await wait(64)
       setSideMovementInProgress(false)
     }
 
     movement()
 
   }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece, movingRight])
+
+
+  // DOWN MOVEMENT
+  useEffect(() => {
+    if (!activePieceFalling || !activePieceCoordY || downMovementInProgress) {
+      return
+    }
+
+    const interval = moveDown ? fallSpeed / (blockSize * 10) : fallSpeed / (blockSize / dropRate)
+    const numOfPixel = moveDown ? activePieceCoordY + 10 : activePieceCoordY + dropRate
+
+    const movement = async () => {
+      setDownMovementInProgress(true)
+      await wait(interval) 
+      if (movingDown(mainGridRef, activePieceRef)) {
+        setActivePieceCoordY(numOfPixel)
+      } else {
+        await wait(64)
+        setActivePieceCoordY(activePieceCoordY)
+        if (movingDown(mainGridRef, activePieceRef)) {
+          setActivePieceCoordY(numOfPixel)
+        } else {
+          setActivePieceFalling(false)
+        }
+      }
+      setDownMovementInProgress(false)
+    }
+
+    movement()
+  }, [activePieceCoordY, activePieceFalling, blockSize, fallSpeed, downMovementInProgress, dropRate, movingDown, moveDown])
 
 
   // ROTATION MOVEMENT
@@ -332,10 +292,6 @@ const MainGrid = ({ container }) => {
         setRenderedActivePiece(null)
         setActivePieceCoordX(null)
         setActivePieceCoordY(null)
-        setMoveLeft(false)
-        setMoveRight(false)
-        setMoveDown(false)
-        // setRotation(0)
         return promise()
       }
 
@@ -350,7 +306,7 @@ const MainGrid = ({ container }) => {
         const spaceRect = space.getBoundingClientRect()
         return (
           spaceRect.left <= blockBounds.left && spaceRect.right >= blockBounds.right &&
-          spaceRect.top <= blockBounds.top && spaceRect.bottom >= blockBounds.bottom &&
+          spaceRect.top <= blockBounds.top && spaceRect.bottom <= blockBounds.bottom &&
           !space.classList.contains('active-block')
           )
       }).pop()
@@ -359,7 +315,7 @@ const MainGrid = ({ container }) => {
     })
       
     resetPiece()
-  }, [activePieceFalling, activePiece])
+  }, [activePieceFalling, activePiece, setMoveLeft, setMoveRight, setMoveDown])
 
   const renderedGridSpaces = () => {
     const gridSpaces = []
