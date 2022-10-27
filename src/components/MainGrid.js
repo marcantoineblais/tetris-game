@@ -196,7 +196,7 @@ const MainGrid = ({ container }) => {
 
   //LEFT MOVEMENT
   useEffect(() => {
-    if (!moveLeft || sideMovementInProgress || !renderedActivePiece) {
+    if (!activePieceFalling || !moveLeft || sideMovementInProgress || !renderedActivePiece) {
       return
     }
 
@@ -204,43 +204,44 @@ const MainGrid = ({ container }) => {
       setSideMovementInProgress(true)
       if (movingLeft(mainGridRef, activePieceRef)) {
         setActivePieceCoordX(activePieceCoordX - blockSize)
-        await wait(64)
+        await wait(48)
       }
       setSideMovementInProgress(false)
     }
 
     movement()
 
-  }, [moveLeft, movingLeft, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece])
+  }, [moveLeft, movingLeft, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece, activePieceFalling])
 
 
   //RIGHT MOVEMENT
   useEffect(() => {
-    if (!moveRight || sideMovementInProgress || !renderedActivePiece) {
+    if (!activePieceFalling || !moveRight || sideMovementInProgress || !renderedActivePiece) {
       return
     }
     const movement = async () => {
       setSideMovementInProgress(true)
       if (movingRight(mainGridRef, activePieceRef)) {
         setActivePieceCoordX(activePieceCoordX + blockSize)
-        await wait(64)
+        await wait(48)
       }
       setSideMovementInProgress(false)
     }
 
     movement()
 
-  }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece, movingRight])
+  }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece, movingRight, activePieceFalling])
 
 
   // DOWN MOVEMENT
   useEffect(() => {
-    if (!activePieceFalling || !activePieceCoordY || downMovementInProgress) {
+    if (!activePieceFalling || !activePieceFalling || !activePieceCoordY || downMovementInProgress) {
       return
     }
 
+    const pixelBeforeNextSpace = activePieceCoordY % 10 ? activePieceCoordY % 10 : 10
     const interval = moveDown ? fallSpeed / (blockSize * 10) : fallSpeed / (blockSize / dropRate)
-    const numOfPixel = moveDown ? activePieceCoordY + 10 : activePieceCoordY + dropRate
+    const numOfPixel = moveDown ? activePieceCoordY + pixelBeforeNextSpace : activePieceCoordY + dropRate
 
     const movement = async () => {
       setDownMovementInProgress(true)
@@ -271,14 +272,24 @@ const MainGrid = ({ container }) => {
     
     const movement = async () => {
       setRotationInProgress(true)
-      rotate(mainGridRef, activePieceRef)
-      await wait(64)
+      if (!rotate(mainGridRef, activePieceRef)) {
+        if (rotate(mainGridRef, activePieceRef, -blockSize)) {
+          setActivePieceCoordX(activePieceCoordX - blockSize)
+        } else if (rotate(mainGridRef, activePieceRef, blockSize)) {
+          setActivePieceCoordX(activePieceCoordX + blockSize)
+        } else if (rotate(mainGridRef, activePieceRef, -2 * blockSize)) {
+          setActivePieceCoordX(activePieceCoordX + (-2 *blockSize))
+        } else if (rotate(mainGridRef, activePieceRef, 2 * blockSize)) {
+          setActivePieceCoordX(activePieceCoordX + (2 * blockSize))
+        }
+      }
+      await wait(16)
       setRotationInProgress(false)
       setRotation(false)
     }
     
     movement()
-  }, [activePieceFalling, activePieceRef, rotation, rotate, rotationInProgress, setRotation])
+  }, [activePieceFalling, activePieceRef, rotation, rotate, rotationInProgress, setRotation, blockSize, activePieceCoordX])
 
  
   // // FIX STOPPED PIECE POSITION

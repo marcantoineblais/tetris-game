@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useState } from "react"
 
 const useMoveLeft = (bool) => {
 
@@ -13,9 +13,11 @@ const useMoveLeft = (bool) => {
     let collision
     [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
       const spaceBounds = space.getBoundingClientRect()
-      if (((spaceBounds.bottom >= blockBounds.bottom && spaceBounds.top < blockBounds.bottom) || 
-           (spaceBounds.bottom > blockBounds.top && spaceBounds.top <= blockBounds.top)) &&
-            spaceBounds.right === blockBounds.left) {
+      if (
+        spaceBounds.top - blockBounds.bottom <= 0 &&
+        spaceBounds.bottom < blockBounds.top &&
+        spaceBounds.right === blockBounds.left
+      ) {
         collision = true
       }
     })
