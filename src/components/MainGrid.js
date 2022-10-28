@@ -5,6 +5,7 @@ import useMoveLeft from "./mouvements/useMoveLeft"
 import useMoveRight from "./mouvements/useMoveRight"
 import useMoveDown from "./mouvements/useMoveDown"
 import useRotation from "./mouvements/useRotation"
+import useDestroyLines from "./mouvements/useDestroyLines"
 
 const MainGrid = ({ container }) => {
 
@@ -25,6 +26,7 @@ const MainGrid = ({ container }) => {
   const [moveRight, setMoveRight, movingRight] = useMoveRight(false)
   const [moveDown, setMoveDown, movingDown] = useMoveDown(false)
   const [rotation, setRotation, rotate] = useRotation(0)
+  const [destroyedLines, setDestroyedLines, destroyLines] = useDestroyLines(0)
 
   const [sideMovementInProgress, setSideMovementInProgress] = useState(false)
   const [downMovementInProgress, setDownMovementInProgress] = useState(false)
@@ -299,14 +301,9 @@ const MainGrid = ({ container }) => {
     }
 
     const resetPiece = async () => {
-      const resetValue = () => {
-        setRenderedActivePiece(null)
-        setActivePieceCoordX(null)
-        setActivePieceCoordY(null)
-        return promise()
-      }
-
-      await resetValue()
+      setRenderedActivePiece(null)
+      setActivePieceCoordX(null)
+      setActivePieceCoordY(null)
       setActivePiece(null)
     }
 
@@ -324,8 +321,10 @@ const MainGrid = ({ container }) => {
         
       takenSpace.classList.add('taken', activePiece.color)
     })
-      
+    
+    destroyLines(mainGridRef)
     resetPiece()
+
   }, [activePieceFalling, activePiece, setMoveLeft, setMoveRight, setMoveDown])
 
   const renderedGridSpaces = () => {

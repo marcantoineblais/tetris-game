@@ -8,8 +8,8 @@ const useRotation = (bool) => {
   const checkForCollision = (blockBounds, mainGridRef, offSet) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
     if (
-      blockBounds.right + offSet === mainGridBounds.left ||
-      blockBounds.left + offSet === mainGridBounds.right ||
+      blockBounds.right + offSet <= mainGridBounds.left ||
+      blockBounds.left + offSet >= mainGridBounds.right ||
       blockBounds.bottom > mainGridBounds.bottom
     ) {
       return true
@@ -24,7 +24,7 @@ const useRotation = (bool) => {
           (spaceBounds.top < blockBounds.bottom && spaceBounds.bottom > blockBounds.bottom)
         ) && (
           spaceBounds.right === blockBounds.right + offSet || spaceBounds.left === blockBounds.left + offSet
-        ) 
+        )
       ) {
         collision = true
       }
