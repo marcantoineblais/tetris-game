@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import { spawnPiece } from "./assets"
-import { promise, wait } from "../helpers"
+import { wait } from "../helpers"
 import useMoveLeft from "./mouvements/useMoveLeft"
 import useMoveRight from "./mouvements/useMoveRight"
 import useMoveDown from "./mouvements/useMoveDown"
@@ -14,6 +14,7 @@ const MainGrid = ({ container }) => {
   
   // num of milliseconds to fall 1 block
   const [fallSpeed, setFallSpeed] = useState(750)
+  // num of pixels fall per cycle
   const [dropRate, setDropRate] = useState(1)
 
   const [activePiece, setActivePiece] = useState(null)
@@ -116,7 +117,7 @@ const MainGrid = ({ container }) => {
     setActivePieceCoordX(coordX)
     setActivePieceCoordY(coordY)
     
-  }, [blockSize, activePiece])
+  }, [activePiece])
 
 
   // START ACTIVE PIECE FALL TIMER
@@ -131,7 +132,7 @@ const MainGrid = ({ container }) => {
     }
 
     startToFall()
-  }, [renderedActivePiece, activePieceFalling, downMovementInProgress])
+  }, [renderedActivePiece])
 
 
   // UPDATE ACTIVE PIECE POSITION
@@ -143,7 +144,7 @@ const MainGrid = ({ container }) => {
     activePieceRef.current.style.left = activePieceCoordX.toString() + 'px'
     activePieceRef.current.style.top = activePieceCoordY.toString() + 'px'
 
-  }, [activePieceCoordY, activePieceCoordX, activePieceRef, activePiece, activePieceFalling, renderedActivePiece])
+  }, [activePieceCoordY, activePieceCoordX, activePieceFalling])
 
 
   // DEFINE INPUTS BUFFER AND LISTENER
@@ -193,7 +194,7 @@ const MainGrid = ({ container }) => {
       window.removeEventListener('keydown', bufferInput)
       window.removeEventListener('keyup', manageKeyUpInput)
     }
-  }, [activePieceFalling, setMoveLeft, setMoveRight, setRotation, setMoveDown])
+  }, [])
 
 
   //LEFT MOVEMENT
@@ -213,7 +214,7 @@ const MainGrid = ({ container }) => {
 
     movement()
 
-  }, [moveLeft, movingLeft, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece, activePieceFalling])
+  }, [moveLeft, activePieceFalling, activePieceCoordX, activePieceCoordY, sideMovementInProgress])
 
 
   //RIGHT MOVEMENT
@@ -232,7 +233,7 @@ const MainGrid = ({ container }) => {
 
     movement()
 
-  }, [moveRight, activePieceCoordX, blockSize, sideMovementInProgress, fallSpeed, renderedActivePiece, movingRight, activePieceFalling])
+  }, [moveRight, activePieceFalling, activePieceCoordX, activePieceCoordY, sideMovementInProgress])
 
 
   // DOWN MOVEMENT
@@ -263,12 +264,12 @@ const MainGrid = ({ container }) => {
     }
 
     movement()
-  }, [activePieceCoordY, activePieceFalling, blockSize, fallSpeed, downMovementInProgress, dropRate, movingDown, moveDown])
+  }, [activePieceCoordY, moveDown, activePieceFalling])
 
 
   // ROTATION MOVEMENT
   useEffect(() => {
-    if (!activePieceRef.current || !activePieceFalling || !rotation || rotationInProgress || downMovementInProgress) {
+    if (!activePieceRef.current || !activePieceFalling || !rotation || rotationInProgress) {
       return
     }
     
@@ -291,8 +292,7 @@ const MainGrid = ({ container }) => {
     }
     
     movement()
-  }, [activePieceFalling, activePieceRef, rotation, rotate, rotationInProgress, setRotation, blockSize, activePieceCoordX, downMovementInProgress])
-
+  }, [rotation, rotationInProgress, activePieceFalling])
  
   // // FIX STOPPED PIECE POSITION
   useEffect(() => {
@@ -325,7 +325,7 @@ const MainGrid = ({ container }) => {
     destroyLines(mainGridRef)
     resetPiece()
 
-  }, [activePieceFalling, activePiece, setMoveLeft, setMoveRight, setMoveDown])
+  }, [activePieceFalling, activePiece])
 
   const renderedGridSpaces = () => {
     const gridSpaces = []

@@ -15,7 +15,10 @@ const useDestroyLines = (num) => {
         previousSpaces.forEach((space, j) => space.className = spaces[i - j - 1] ? spaces[i - j - 1].className : 'grid-space')
       }
     }
-    setDestroyedLines(count)
+
+    if (count) {
+      setDestroyedLines(count)
+    }
   }
 
   return [destroyedLines, setDestroyedLines, destroyLines]
