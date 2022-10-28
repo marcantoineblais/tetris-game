@@ -14,9 +14,10 @@ const useMoveLeft = (bool) => {
     [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
       const spaceBounds = space.getBoundingClientRect()
       if (
-        spaceBounds.top - blockBounds.bottom <= 0 &&
-        spaceBounds.bottom < blockBounds.top &&
-        spaceBounds.right === blockBounds.left
+        (
+          (spaceBounds.top <= blockBounds.top && spaceBounds.bottom - 3 > blockBounds.top) ||
+          (spaceBounds.top < blockBounds.bottom && spaceBounds.bottom > blockBounds.bottom)
+        ) && spaceBounds.right === blockBounds.left
       ) {
         collision = true
       }

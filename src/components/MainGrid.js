@@ -266,7 +266,7 @@ const MainGrid = ({ container }) => {
 
   // ROTATION MOVEMENT
   useEffect(() => {
-    if (!activePieceRef.current || !activePieceFalling || !rotation || rotationInProgress) {
+    if (!activePieceRef.current || !activePieceFalling || !rotation || rotationInProgress || downMovementInProgress) {
       return
     }
     
@@ -289,7 +289,7 @@ const MainGrid = ({ container }) => {
     }
     
     movement()
-  }, [activePieceFalling, activePieceRef, rotation, rotate, rotationInProgress, setRotation, blockSize, activePieceCoordX])
+  }, [activePieceFalling, activePieceRef, rotation, rotate, rotationInProgress, setRotation, blockSize, activePieceCoordX, downMovementInProgress])
 
  
   // // FIX STOPPED PIECE POSITION
