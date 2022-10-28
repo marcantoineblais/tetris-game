@@ -1,12 +1,9 @@
-import { useState } from "react"
 
-const useMoveLeft = (bool) => {
-
-  const [moveLeft, setMoveLeft] = useState(bool)
+const moveLeft = (mainGridRef, activePieceRef) => {
 
   const checkForCollision = (blockBounds, mainGridRef) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-    if (blockBounds.left === mainGridBounds.left) {
+    if (blockBounds.left <= mainGridBounds.left) {
       return true
     }
 
@@ -26,22 +23,18 @@ const useMoveLeft = (bool) => {
     return collision
   }
 
-  const movingLeft = (mainGridRef, activePieceRef) => {
-    let collision
-    [].slice.call(activePieceRef.current.children).forEach((block) => {
-      if (checkForCollision(block.getBoundingClientRect(), mainGridRef)) {
-        collision = true
-      }
-    })
-
-    if (!collision) {  
-      return true
+  let collision
+  [].slice.call(activePieceRef.current.children).forEach((block) => {
+    if (checkForCollision(block.getBoundingClientRect(), mainGridRef)) {
+      collision = true
     }
+  })
 
+  if (collision) {  
     return false
   }
 
-  return [moveLeft, setMoveLeft, movingLeft]
+  return true
 }
 
-export default useMoveLeft
+export default moveLeft

@@ -1,9 +1,5 @@
-import { useState } from "react"
 
-
-const useMoveDown = (bool) => {
-
-  const [moveDown, setMoveDown] = useState(bool)
+const moveDown = (mainGridRef, activePieceRef) => {
 
   const checkForCollision = (blockBounds, mainGridRef) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
@@ -22,22 +18,18 @@ const useMoveDown = (bool) => {
     return collision
   }
 
-  const movingDown = (mainGridRef, activePieceRef) => {
-    let collision
-    [].slice.call(activePieceRef.current.children).forEach((block) => {
-      if (checkForCollision(block.getBoundingClientRect(), mainGridRef)) {
-        collision = true
-      }
-    })
-    
-    if (!collision) {
-      return true
+  let collision
+  [].slice.call(activePieceRef.current.children).forEach((block) => {
+    if (checkForCollision(block.getBoundingClientRect(), mainGridRef)) {
+      collision = true
     }
-
-    return false 
+  })
+  
+  if (collision) {
+    return false
   }
 
-  return [moveDown, setMoveDown, movingDown]
+  return true 
 }
 
-export default useMoveDown
+export default moveDown

@@ -1,12 +1,9 @@
-import { useState } from "react"
 
-const useMoveRight = (bool) => {
-
-  const [moveRight, setMoveRight] = useState(bool)
+const moveRight = (mainGridRef, activePieceRef) => {
 
   const checkForCollision = (blockBounds, mainGridRef) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-    if (blockBounds.right === mainGridBounds.right) {
+    if (blockBounds.right >= mainGridBounds.right) {
       return true
     }
 
@@ -26,22 +23,18 @@ const useMoveRight = (bool) => {
     return collision
   }
 
-  const movingRight = (mainGridRef, activePieceRef) => {
-    let collision
-    [].slice.call(activePieceRef.current.children).forEach((block) => {
-      if (checkForCollision(block.getBoundingClientRect(), mainGridRef)) {
-        collision = true
-      }
-    })
-
-    if (!collision) {
-      return true
+  let collision
+  [].slice.call(activePieceRef.current.children).forEach((block) => {
+    if (checkForCollision(block.getBoundingClientRect(), mainGridRef)) {
+      collision = true
     }
+  })
 
+  if (collision) {
     return false
   }
 
-  return [moveRight, setMoveRight, movingRight]
+  return true
 }
 
-export default useMoveRight
+export default moveRight

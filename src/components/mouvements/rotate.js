@@ -1,10 +1,6 @@
-import { useState } from "react"
 
+const rotate = (mainGridRef, activePieceRef, offset = 0) => {
 
-const useRotation = (bool) => {
-
-  const [rotation, setRotation] = useState(bool)
-  
   const checkForCollision = (blockBounds, mainGridRef, offSet) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
     if (
@@ -32,27 +28,23 @@ const useRotation = (bool) => {
     
     return collision
   }
-  
-  const rotate = (mainGridRef, activePieceRef, offset = 0) => {
-    const deg = parseInt(activePieceRef.current.style.transform.slice(7)) || 0
-    activePieceRef.current.style.transform = `rotate(${(deg + 90) % 360}deg)`
 
-    let collision
-    [].slice.call(activePieceRef.current.children).forEach((block) => {
-      if (checkForCollision(block.getBoundingClientRect(), mainGridRef, offset)) {
-        collision = true
-      }
-    })
-    
-    if (collision) {
-      activePieceRef.current.style.transform = `rotate(${deg}deg)`
-      return false
+  const deg = parseInt(activePieceRef.current.style.transform.slice(7)) || 0
+  activePieceRef.current.style.transform = `rotate(${(deg + 90) % 360}deg)`
+
+  let collision
+  [].slice.call(activePieceRef.current.children).forEach((block) => {
+    if (checkForCollision(block.getBoundingClientRect(), mainGridRef, offset)) {
+      collision = true
     }
-
-    return true
+  })
+  
+  if (collision) {
+    activePieceRef.current.style.transform = `rotate(${deg}deg)`
+    return false
   }
 
-  return [rotation, setRotation, rotate]
+  return true
 }
 
-export default useRotation
+export default rotate

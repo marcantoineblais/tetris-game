@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react"
 import { spawnPiece } from "./assets"
 import { wait } from "../helpers"
-import useMoveLeft from "./mouvements/useMoveLeft"
-import useMoveRight from "./mouvements/useMoveRight"
-import useMoveDown from "./mouvements/useMoveDown"
-import useRotation from "./mouvements/useRotation"
 import useDestroyLines from "./mouvements/useDestroyLines"
+import moveLeft from "./mouvements/moveLeft"
+import moveRight from "./mouvements/moveRight"
+import moveDown from "./mouvements/moveDown"
+import rotate from "./mouvements/rotate"
 
 const MainGrid = ({ container }) => {
 
@@ -13,7 +13,7 @@ const MainGrid = ({ container }) => {
   const [blockSize, setBlockSize] = useState(null)
   
   // num of milliseconds to fall 1 block
-  const [fallSpeed, setFallSpeed] = useState(750)
+  const [dropSpeed, setDropSpeed] = useState(750)
   // num of pixels fall per cycle
   const [dropRate, setDropRate] = useState(1)
 
@@ -23,15 +23,10 @@ const MainGrid = ({ container }) => {
   const [activePieceCoordY, setActivePieceCoordY] = useState(null)
   
   const [activePieceFalling, setActivePieceFalling] = useState(false)
-  const [moveLeft, setMoveLeft, movingLeft] = useMoveLeft(false)
-  const [moveRight, setMoveRight, movingRight] = useMoveRight(false)
-  const [moveDown, setMoveDown, movingDown] = useMoveDown(false)
-  const [rotation, setRotation, rotate] = useRotation(0)
+  const [inputBuffer, setInputBuffer] = useState([])
   const [destroyedLines, setDestroyedLines, destroyLines] = useDestroyLines(0)
 
-  const [sideMovementInProgress, setSideMovementInProgress] = useState(false)
-  const [downMovementInProgress, setDownMovementInProgress] = useState(false)
-  const [rotationInProgress, setRotationInProgress] = useState(false)
+  const frame = 16.6
 
   const mainGridRef = useRef()
   const activePieceRef = useRef()
@@ -68,6 +63,93 @@ const MainGrid = ({ container }) => {
     }
   }, [container])
 
+
+  // EXECUTE INPUTS IN INPUTBUFFER EVERY FRAME
+  useEffect(() => {
+    const drawPiece = () => {
+      if (renderedActivePiece) {
+        activePieceRef.current.style.left = activePieceCoordX.toString() + 'px'
+        activePieceRef.current.style.top = activePieceCoordY.toString() + 'px'
+      }
+    }
+
+    const movingDown = async (rate = dropRate) => {
+      if (moveDown(mainGridRef, activePieceRef)) {
+        setActivePieceCoordY(activePieceCoordY + rate)
+      } else {
+        await wait(6 * frame)
+        if (moveDown(mainGridRef, activePieceRef)) {
+          setActivePieceCoordY(activePieceCoordY + rate)
+        } else {
+          setActivePieceFalling(false)
+        }
+      }
+    }
+
+    const movingRight = () => {
+      if (moveRight(mainGridRef, activePieceRef)) {
+        setActivePieceCoordX(activePieceCoordX + blockSize)
+      }
+    }
+
+    const movingLeft = () => {
+      if (moveLeft(mainGridRef, activePieceRef)) {
+        setActivePieceCoordX(activePieceCoordX - blockSize)
+      }
+    }
+
+    const rotation = () => {
+      if (!rotate(mainGridRef, activePieceRef)) {
+        if (rotate(mainGridRef, activePieceRef, -blockSize)) {
+          setActivePieceCoordX(activePieceCoordX - blockSize)
+        } else if (rotate(mainGridRef, activePieceRef, blockSize)) {
+          setActivePieceCoordX(activePieceCoordX + blockSize)
+        } else if (rotate(mainGridRef, activePieceRef, -2 * blockSize)) {
+          setActivePieceCoordX(activePieceCoordX + (-2 *blockSize))
+        } else if (rotate(mainGridRef, activePieceRef, 2 * blockSize)) {
+          setActivePieceCoordX(activePieceCoordX + (2 * blockSize))
+        }
+      }
+    }
+
+    const executeInputs = () => {
+      inputBuffer.forEach(input => {
+        switch(input) {
+          case 'ArrowLeft':
+            movingLeft()
+            break
+          case 'ArrowRight':
+            movingRight()
+            break
+          case 'ArrowDown':
+            movingDown(10)
+            break
+          case ' ':
+            rotation()
+            setInputBuffer(inputBuffer.filter(key => key !== ' '))  
+            break
+          default:
+            break
+        }
+      })
+    }
+
+    const refreshCycle = setInterval(() => {
+      executeInputs()
+      drawPiece()
+    }, frame)
+
+    const makePieceDrop = setInterval(() => {
+      movingDown(mainGridRef, activePieceRef)
+    }, dropSpeed / frame)
+
+    return () => {
+      clearInterval(refreshCycle)
+      clearInterval(makePieceDrop)
+    }
+  }, [inputBuffer, activePieceCoordX, activePieceCoordY, blockSize, dropSpeed, dropRate, renderedActivePiece])
+
+
   // SPAWN RANDOM PIECE
   useEffect(() => {
     if (activePiece) {
@@ -76,6 +158,7 @@ const MainGrid = ({ container }) => {
 
     setActivePiece(spawnPiece())
   }, [activePiece])
+
 
   // RENDER ACTIVE PIECE
   useEffect(() => {
@@ -117,12 +200,12 @@ const MainGrid = ({ container }) => {
     setActivePieceCoordX(coordX)
     setActivePieceCoordY(coordY)
     
-  }, [activePiece])
+  }, [activePiece, blockSize])
 
 
-  // START ACTIVE PIECE FALL TIMER
+  // START DROPPING ACTIVE PIECE AFTER RENDER
   useEffect(() => {
-    if (!renderedActivePiece || activePieceFalling || downMovementInProgress) {
+    if (!renderedActivePiece || activePieceFalling) {
       return
     }
 
@@ -132,168 +215,37 @@ const MainGrid = ({ container }) => {
     }
 
     startToFall()
-  }, [renderedActivePiece])
+  }, [renderedActivePiece, activePieceFalling])
 
 
-  // UPDATE ACTIVE PIECE POSITION
-  useEffect(() => {
-    if (!activePieceCoordY || !activePieceCoordX || !renderedActivePiece || !activePieceFalling || !activePiece) {
-      return
-    }
-
-    activePieceRef.current.style.left = activePieceCoordX.toString() + 'px'
-    activePieceRef.current.style.top = activePieceCoordY.toString() + 'px'
-
-  }, [activePieceCoordY, activePieceCoordX, activePieceFalling])
-
-
-  // DEFINE INPUTS BUFFER AND LISTENER
+  // DEFINE INPUTBUFFER EVENT LISTENER
   useEffect(() => {
 
-    const bufferInput = (e) => {
-      switch (e.key) {
-        case 'ArrowLeft':
-          setMoveLeft(true)
-          setMoveRight(false)
-          break
-        case 'ArrowRight':
-          setMoveRight(true)
-          setMoveLeft(false)
-          break
-        case 'ArrowDown':
-          setMoveDown(true)
-          break
-        default:
-          break;
+    
+    const onKeyDown = (e) => {
+      const keys = ['ArrowLeft', 'ArrowRight', 'ArrowDown', ' ', 'p', 'm']
+      if (keys.includes(e.key) && !inputBuffer.includes(e.key)) {
+        setInputBuffer([...inputBuffer, e.key])
       }
     }
 
-    const manageKeyUpInput = (e) => {
-      switch (e.key) {
-        case 'ArrowLeft':
-          setMoveLeft(false)
-          break
-        case 'ArrowRight':
-          setMoveRight(false)
-          break
-        case 'ArrowDown':
-          setMoveDown(false)
-          break
-        case ' ':
-          setRotation(true)
-          break
-        default:
-          break;
+    const onKeyUp = (e) => {
+      const keys = ['ArrowLeft', 'ArrowRight', 'ArrowDown']
+      if (keys.includes(e.key)) {
+        setInputBuffer(inputBuffer.filter(key => key !== e.key))
       }
     }
 
-    window.addEventListener('keydown', bufferInput)
-    window.addEventListener('keyup', manageKeyUpInput)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
     
     return () => {
-      window.removeEventListener('keydown', bufferInput)
-      window.removeEventListener('keyup', manageKeyUpInput)
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
     }
-  }, [])
+  }, [inputBuffer])
 
 
-  //LEFT MOVEMENT
-  useEffect(() => {
-    if (!activePieceFalling || !moveLeft || sideMovementInProgress || !renderedActivePiece) {
-      return
-    }
-
-    const movement = async () => {
-      setSideMovementInProgress(true)
-      if (movingLeft(mainGridRef, activePieceRef)) {
-        setActivePieceCoordX(activePieceCoordX - blockSize)
-        await wait(48)
-      }
-      setSideMovementInProgress(false)
-    }
-
-    movement()
-
-  }, [moveLeft, activePieceFalling, activePieceCoordX, activePieceCoordY, sideMovementInProgress])
-
-
-  //RIGHT MOVEMENT
-  useEffect(() => {
-    if (!activePieceFalling || !moveRight || sideMovementInProgress || !renderedActivePiece) {
-      return
-    }
-    const movement = async () => {
-      setSideMovementInProgress(true)
-      if (movingRight(mainGridRef, activePieceRef)) {
-        setActivePieceCoordX(activePieceCoordX + blockSize)
-        await wait(48)
-      }
-      setSideMovementInProgress(false)
-    }
-
-    movement()
-
-  }, [moveRight, activePieceFalling, activePieceCoordX, activePieceCoordY, sideMovementInProgress])
-
-
-  // DOWN MOVEMENT
-  useEffect(() => {
-    if (!activePieceFalling || !activePieceFalling || !activePieceCoordY || downMovementInProgress) {
-      return
-    }
-
-    const pixelBeforeNextSpace = activePieceCoordY % 10 ? activePieceCoordY % 10 : 10
-    const interval = moveDown ? fallSpeed / (blockSize * 10) : fallSpeed / (blockSize / dropRate)
-    const numOfPixel = moveDown ? activePieceCoordY + pixelBeforeNextSpace : activePieceCoordY + dropRate
-
-    const movement = async () => {
-      setDownMovementInProgress(true)
-      await wait(interval) 
-      if (movingDown(mainGridRef, activePieceRef)) {
-        setActivePieceCoordY(numOfPixel)
-      } else {
-        await wait(64)
-        setActivePieceCoordY(activePieceCoordY)
-        if (movingDown(mainGridRef, activePieceRef)) {
-          setActivePieceCoordY(numOfPixel)
-        } else {
-          setActivePieceFalling(false)
-        }
-      }
-      setDownMovementInProgress(false)
-    }
-
-    movement()
-  }, [activePieceCoordY, moveDown, activePieceFalling])
-
-
-  // ROTATION MOVEMENT
-  useEffect(() => {
-    if (!activePieceRef.current || !activePieceFalling || !rotation || rotationInProgress) {
-      return
-    }
-    
-    const movement = async () => {
-      setRotationInProgress(true)
-      if (!rotate(mainGridRef, activePieceRef)) {
-        if (rotate(mainGridRef, activePieceRef, -blockSize)) {
-          setActivePieceCoordX(activePieceCoordX - blockSize)
-        } else if (rotate(mainGridRef, activePieceRef, blockSize)) {
-          setActivePieceCoordX(activePieceCoordX + blockSize)
-        } else if (rotate(mainGridRef, activePieceRef, -2 * blockSize)) {
-          setActivePieceCoordX(activePieceCoordX + (-2 *blockSize))
-        } else if (rotate(mainGridRef, activePieceRef, 2 * blockSize)) {
-          setActivePieceCoordX(activePieceCoordX + (2 * blockSize))
-        }
-      }
-      await wait(16)
-      setRotationInProgress(false)
-      setRotation(false)
-    }
-    
-    movement()
-  }, [rotation, rotationInProgress, activePieceFalling])
- 
   // // FIX STOPPED PIECE POSITION
   useEffect(() => {
     if (activePieceFalling || !activePiece || !activePieceRef.current) {
