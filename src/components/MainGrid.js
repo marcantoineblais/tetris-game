@@ -16,20 +16,12 @@ const MainGrid = ({ container }) => {
   const [dropSpeed, setDropSpeed] = useState(750)
   // num of pixels fall per cycle
   const [dropRate, setDropRate] = useState(1)
-
-  const [activePiece, setActivePiece] = useState(null)
-  const [renderedActivePiece, setRenderedActivePiece] = useState(null)
-  const [activePieceCoordX, setActivePieceCoordX] = useState(null)
-  const [activePieceCoordY, setActivePieceCoordY] = useState(null)
-  
-  const [activePieceFalling, setActivePieceFalling] = useState(false)
   const [inputBuffer, setInputBuffer] = useState([])
   const [destroyedLines, setDestroyedLines, destroyLines] = useDestroyLines(0)
 
   const frame = 16.6
-
   const mainGridRef = useRef()
-  const activePieceRef = useRef()
+  const pieceRef = useRef()
 
 
   // SET GRID SIZE AND EVENT LISTENER
@@ -66,11 +58,33 @@ const MainGrid = ({ container }) => {
 
   // EXECUTE INPUTS IN INPUTBUFFER EVERY FRAME
   useEffect(() => {
+
+    const renderPiece = (piece) => {
+     
+      const renderedBlocks = []
+      piece.coordinates.forEach((baseCoord, i) => {
+        const coordX = baseCoord.x * blockSize
+        const coordY = baseCoord.y * blockSize
+        
+        const style = {
+          width: blockSize.toString() + 'px',
+          height: blockSize.toString() + 'px',
+          left: coordX.toString() + 'px',
+          top: coordY.toString() + 'px'
+        }
+        const block = <div className={'active-block ' + piece.color} style={style} key={i}></div>
+        renderedBlocks.push(block)
+      })
+  
+      const coordX = piece.center.x * blockSize
+      const coordY = piece.center.y * blockSize
+      const top = coordY.toString() + 'px'
+      const left = coordX.toString() + 'px'
+    }
+
     const drawPiece = () => {
-      if (renderedActivePiece) {
-        activePieceRef.current.style.left = activePieceCoordX.toString() + 'px'
-        activePieceRef.current.style.top = activePieceCoordY.toString() + 'px'
-      }
+      activePieceRef.current.style.left = activePieceCoordX.toString() + 'px'
+      activePieceRef.current.style.top = activePieceCoordY.toString() + 'px'
     }
 
     const movingDown = async (rate = dropRate) => {
@@ -82,6 +96,7 @@ const MainGrid = ({ container }) => {
           setActivePieceCoordY(activePieceCoordY + rate)
         } else {
           setActivePieceFalling(false)
+          stopDroppingOnCollision()
         }
       }
     }
@@ -112,6 +127,25 @@ const MainGrid = ({ container }) => {
       }
     }
 
+    const stopDroppingOnCollision = () => {
+      [].slice.call(pieceRef.current.children).forEach((block) => {
+        const blockBounds = block.getBoundingClientRect()
+        
+        const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
+          const spaceRect = space.getBoundingClientRect()
+          return (
+            spaceRect.left <= blockBounds.left && spaceRect.right >= blockBounds.right &&
+            spaceRect.top <= blockBounds.top && spaceRect.bottom <= blockBounds.bottom &&
+            !space.classList.contains('active-block')
+            )
+        }).pop()
+        const color = pieceRef.current.children[0].style.backgroundColor
+        takenSpace.classList.add('taken', color)
+      })
+      
+      destroyLines(mainGridRef)
+    }
+
     const executeInputs = () => {
       inputBuffer.forEach(input => {
         switch(input) {
@@ -122,7 +156,8 @@ const MainGrid = ({ container }) => {
             movingRight()
             break
           case 'ArrowDown':
-            movingDown(10)
+            const rate = (activePieceCoordY % blockSize) - mainGridRef.current.getBoundingClientRect().top || blockSize
+            movingDown(rate)
             break
           case ' ':
             rotation()
@@ -135,19 +170,19 @@ const MainGrid = ({ container }) => {
     }
 
     const refreshCycle = setInterval(() => {
-      executeInputs()
       drawPiece()
+      executeInputs()
     }, frame)
 
     const makePieceDrop = setInterval(() => {
-      movingDown(mainGridRef, activePieceRef)
+      movingDown()
     }, dropSpeed / frame)
 
     return () => {
       clearInterval(refreshCycle)
       clearInterval(makePieceDrop)
     }
-  }, [inputBuffer, activePieceCoordX, activePieceCoordY, blockSize, dropSpeed, dropRate, renderedActivePiece])
+  }, [inputBuffer, activePieceFalling, activePieceCoordX, activePieceCoordY, blockSize, dropSpeed, dropRate, renderedActivePiece, activePiece, destroyLines])
 
 
   // SPAWN RANDOM PIECE
@@ -166,36 +201,7 @@ const MainGrid = ({ container }) => {
       return
     }
 
-    const renderedPiece = (activePiece, blockSize) => {
-      const blocks = []
-      activePiece.coordinates.forEach((baseCoord, i) => {
-        const coordX = baseCoord.x * blockSize
-        const coordY = baseCoord.y * blockSize
-        
-        const style = {
-          width: blockSize.toString() + 'px',
-          height: blockSize.toString() + 'px',
-          left: coordX.toString() + 'px',
-          top: coordY.toString() + 'px'
-        }
-        const block = <div className={'active-block ' + activePiece.color} style={style} key={i}></div>
-        blocks.push(block)
-      })
     
-      return blocks
-    }
-
-    const renderedBlocks = renderedPiece(activePiece, blockSize)
-    const coordX = activePiece.center.x * blockSize
-    const coordY = activePiece.center.y * blockSize
-    const top = coordY.toString() + 'px'
-    const left = coordX.toString() + 'px'
-
-    setRenderedActivePiece(
-      <div ref={activePieceRef} className="active-container" style={{ position: 'absolute', top: top, left: left}}>
-        {renderedBlocks}
-      </div>
-    )
 
     setActivePieceCoordX(coordX)
     setActivePieceCoordY(coordY)
@@ -246,39 +252,6 @@ const MainGrid = ({ container }) => {
   }, [inputBuffer])
 
 
-  // // FIX STOPPED PIECE POSITION
-  useEffect(() => {
-    if (activePieceFalling || !activePiece || !activePieceRef.current) {
-      return
-    }
-
-    const resetPiece = async () => {
-      setRenderedActivePiece(null)
-      setActivePieceCoordX(null)
-      setActivePieceCoordY(null)
-      setActivePiece(null)
-    }
-
-    [].slice.call(activePieceRef.current.children).forEach((block) => {
-      const blockBounds = block.getBoundingClientRect()
-      
-      const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
-        const spaceRect = space.getBoundingClientRect()
-        return (
-          spaceRect.left <= blockBounds.left && spaceRect.right >= blockBounds.right &&
-          spaceRect.top <= blockBounds.top && spaceRect.bottom <= blockBounds.bottom &&
-          !space.classList.contains('active-block')
-          )
-      }).pop()
-        
-      takenSpace.classList.add('taken', activePiece.color)
-    })
-    
-    destroyLines(mainGridRef)
-    resetPiece()
-
-  }, [activePieceFalling, activePiece])
-
   const renderedGridSpaces = () => {
     const gridSpaces = []
     for (let y = 0; y < 22; y += 1) {
@@ -293,7 +266,7 @@ const MainGrid = ({ container }) => {
   return (
     <div ref={mainGridRef} className="main-grid">
       {renderedGridSpaces()}
-      {renderedActivePiece}
+      <div ref={pieceRef} className="active-container" style={{ position: 'absolute'}}></div>
     </div>
   )
 }
