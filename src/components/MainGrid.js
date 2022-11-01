@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react"
-import parse from "html-react-parser"
 import { spawnPiece } from "./assets"
 import { wait } from "../helpers"
 import destroyLines from "./mouvements/destroyLines"
@@ -12,11 +11,11 @@ const MainGrid = ({ container }) => {
 
   // width and height of a block
   const [blockSize, setBlockSize] = useState(null)
-  
   // num of milliseconds to fall 1 block
   const [dropSpeed, setDropSpeed] = useState(750)
-  // num of pixels fall per cycle
-  const [dropRate, setDropRate] = useState(1)
+
+  const [db, setDB] = useState(null)
+  const [pieceBlocks, setPieceBlocks] = useState(null)
   
   const frame = 16.6
   const mainGridRef = useRef()
@@ -54,23 +53,68 @@ const MainGrid = ({ container }) => {
     }
   }, [container])
   
+  useEffect(() => {
+      // CREATE LOCAL DB IN BROWSER
 
+      let database
+      const request = window.indexedDB.open('gameData', 1)
+      request.onerror = (e) => {
+        console.error('Please allow use of DB to play game')
+      }
+      request.onsuccess = (e) => {
+        database = e.target.result
+        database.inputBuffer = []
+        database.score = 0
+        database.destroyedLines = 0
+        database.dropRate = 1
+        setDB(database)
+      }
+  }, [])
+
+  useEffect(() => {
+    if (!db || pieceBlocks) {
+      return
+    }
+
+
+    // RENDER NEW PIECE
+    const renderPiece = (piece) => {
+      const blocks = []
+      piece.coordinates.forEach((coord, i) => {
+        const coordX = coord.x * blockSize
+        const coordY = coord.y * blockSize
+        
+        const style = {
+          width: blockSize.toString() + 'px',
+          height: blockSize.toString() + 'px',
+          left: coordX.toString() + 'px',
+          top: coordY.toString() + 'px'
+        }
+        blocks.push(<div className={'active-block ' + piece.color} style={style} key={i}>{}</div>)
+      })
+      
+      const coordX = piece.center.x * blockSize
+      const coordY = piece.center.y * blockSize
+      const top = coordY.toString() + 'px'
+      const left = coordX.toString() + 'px'
+      
+      pieceRef.current.style.top = top
+      pieceRef.current.style.left = left
+      db.coord = { x: coordX, y: coordY }
+
+      setPieceBlocks(blocks)
+    }
+
+    renderPiece(spawnPiece())
+  }, [db, pieceBlocks, blockSize])
   
   useEffect(() => {
     
-    // CREATE LOCAL DB IN BROWSER
-    let db
-    const request = window.indexedDB.open('gameData')
-    request.onerror = (e) => {
-      console.error('Please allow use of DB to play game')
+    if (!db) {
+      return
     }
-    request.onsuccess = (e) => {
-      db = e.target.result
-      db.inputBuffer = []
-      db.score = 0
-      db.destroyedLines = 0
-    }
-    
+
+
     // CREATE EVENT LISTENER FOR CONTROLS
     const onKeyDown = (e) => {
       const keys = ['ArrowLeft', 'ArrowRight', 'ArrowDown', ' ', 'p', 'm']
@@ -90,32 +134,7 @@ const MainGrid = ({ container }) => {
     window.addEventListener('keyup', onKeyUp)
     
 
-    // RENDER NEW PIECE
-    const renderPiece = (piece) => {
-      
-      piece.coordinates.forEach((coord, i) => {
-        const coordX = coord.x * blockSize
-        const coordY = coord.y * blockSize
-        
-        const style = {
-          width: blockSize.toString() + 'px',
-          height: blockSize.toString() + 'px',
-          left: coordX.toString() + 'px',
-          top: coordY.toString() + 'px'
-        }
-        const block = <div className={'active-block ' + piece.color} style={style} key={i}>{}</div>
-        pieceRef.current.insertAdjacentHTML('beforeend', block)
-      })
-      
-      const coordX = piece.center.x * blockSize
-      const coordY = piece.center.y * blockSize
-      const top = coordY.toString() + 'px'
-      const left = coordX.toString() + 'px'
-      
-      pieceRef.current.style.top = top
-      pieceRef.current.style.left = left
-    }
-    
+    // PIECE EVERY FRAME
     const drawPiece = (coord) => {
       pieceRef.current.style.left = coord.x.toString() + 'px'
       pieceRef.current.style.top = coord.y.toString() + 'px'
@@ -123,7 +142,7 @@ const MainGrid = ({ container }) => {
     
 
     // CHECKS FOR MOVEMENT AND COLLISIONS
-    const movingDown = async (rate = dropRate) => {
+    const movingDown = async (rate = db.dropRate) => {
       if (moveDown(mainGridRef, pieceRef)) {
         return true
       } else {
@@ -184,10 +203,7 @@ const MainGrid = ({ container }) => {
 
     // EXECUTE INPUTS FROM BUFFER EVERY FRAME WHEN NO COLLISION DETECTED
     const executeInputs = () => {
-      const coord = {
-        x: parseInt(pieceRef.current.style.left),
-        y: parseInt(pieceRef.current.style.top)
-      }
+      const coord = db.coord
       db.inputBuffer.forEach(input => {
         switch(input) {
           case 'ArrowLeft':
@@ -203,6 +219,8 @@ const MainGrid = ({ container }) => {
             const rate = (coord.y % blockSize) - mainGridRef.current.getBoundingClientRect().top || blockSize
             if (movingDown(rate)) {
               coord.y += rate
+            } else {
+              stopDroppingOnCollision()
             }
             break
           case ' ':
@@ -213,24 +231,25 @@ const MainGrid = ({ container }) => {
             break
         }
       })
-
-      drawPiece(coord)
+      db.coord = coord
     }
     
 
     const refreshCycle = setInterval(() => {
-      if (!db.piece) {
-        renderPiece(spawnPiece())
-      }
-      if (pieceRef.current.innerHTML) {
+      if (pieceBlocks) {
         executeInputs()
+        drawPiece(db.coord)
       }
     }, frame)
     
 
     // MAKE PIECE FALL EVERY FRAME FOR 1 SPACE EVERY DROPSPEED TIME (MILLISECONDS)
     const makePieceDrop = setInterval(() => {
-      movingDown()
+      if (pieceBlocks && movingDown()) {
+        db.coord.y += db.dropRate
+      } else {
+        stopDroppingOnCollision()
+      }
     }, dropSpeed / frame)
     
     return () => {
@@ -239,8 +258,8 @@ const MainGrid = ({ container }) => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
     }
-  }, [blockSize, dropRate, dropSpeed])
-  
+  }, [blockSize, dropSpeed, pieceBlocks, db])
+
 
   const renderedGridSpaces = () => {
     const gridSpaces = []
@@ -256,7 +275,9 @@ const MainGrid = ({ container }) => {
   return (
     <div ref={mainGridRef} className="main-grid">
       {renderedGridSpaces()}
-      <div ref={pieceRef} className="active-container" style={{ position: 'absolute'}}></div>
+      <div ref={pieceRef} className="active-container" style={{ position: 'absolute'}}>
+        {pieceBlocks}
+      </div>
     </div>
   )
 }
