@@ -7,14 +7,13 @@ import moveRight from "./mouvements/moveRight"
 import moveDown from "./mouvements/moveDown"
 import rotate from "./mouvements/rotate"
 
-const MainGrid = ({ container }) => {
+const MainGrid = ({ container, db }) => {
 
   // width and height of a block
   const [blockSize, setBlockSize] = useState(null)
   // num of milliseconds to fall 1 block
   const [dropSpeed, setDropSpeed] = useState(750)
 
-  const [db, setDB] = useState(null)
   const [pieceBlocks, setPieceBlocks] = useState(null)
   const [gameActive, setGameActive] = useState(false)
   
@@ -54,23 +53,6 @@ const MainGrid = ({ container }) => {
     }
   }, [container])
   
-  useEffect(() => {
-      // CREATE LOCAL DB IN BROWSER
-
-      let database
-      const request = window.indexedDB.open('gameData', 1)
-      request.onerror = (e) => {
-        console.error('Please allow use of DB to play game')
-      }
-      request.onsuccess = (e) => {
-        database = e.target.result
-        database.inputBuffer = []
-        database.score = 0
-        database.destroyedLines = 0
-        database.dropRate = 1
-        setDB(database)
-      }
-  }, [])
 
   useEffect(() => {
     if (!db || pieceBlocks) {
@@ -105,7 +87,12 @@ const MainGrid = ({ container }) => {
       setPieceBlocks(blocks)
     }
 
-    renderPiece(spawnPiece())
+    let piece = spawnPiece()
+    while (piece === db.piece) {
+      piece = spawnPiece()
+    }
+    db.piece = piece
+    renderPiece(piece)
   }, [db, pieceBlocks, blockSize])
   
   useEffect(() => {
@@ -140,11 +127,6 @@ const MainGrid = ({ container }) => {
 
     // CHECKS FOR MOVEMENT AND COLLISIONS
     const movingDown = () => {
-
-      if (db.dropInProgress) {
-        return false
-      }
-
       return moveDown(mainGridRef, pieceRef)
     }
     
@@ -176,7 +158,7 @@ const MainGrid = ({ container }) => {
       [].slice.call(pieceRef.current.children).forEach((block) => {
         const blockBounds = block.getBoundingClientRect()
         const blockBoundsX = (blockBounds.right + blockBounds.left) / 2
-        const blockBoundsY = (blockBounds.bottom - blockBounds.top) / 2
+        const blockBoundsY = (blockBounds.bottom + blockBounds.top) / 2
         
         const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
           const spaceRect = space.getBoundingClientRect()
@@ -186,13 +168,13 @@ const MainGrid = ({ container }) => {
             !space.classList.contains('active-block')
             )
           }).pop()
-        const color = pieceRef.current.children[0].style.backgroundColor
-        takenSpace.classList.add('taken', color)
+        
+        takenSpace.classList.add('taken', db.piece.color)
       })
       
+      clearInterval(refreshCycle)
       makePieceDrop(false)
       setPieceBlocks(null)
-      
       const numOfLines = destroyLines(mainGridRef)
       db.destroyedLines = numOfLines
     }
@@ -218,42 +200,34 @@ const MainGrid = ({ container }) => {
 
       // EXECUTE INPUTS FROM BUFFER EVERY FRAME WHEN NO COLLISION DETECTED
       const executeInputs = () => {
-        const coord = db.coord
-        db.inputBuffer.forEach(input => {
-          switch(input) {
-            case 'ArrowLeft':
-              if (movingLeft())
-              coord.x -= blockSize
-              break
-              case 'ArrowRight':
-                if (movingRight()) {
-                coord.x += blockSize
-              }
-              break
-            case 'ArrowDown':
-              const rate = (coord.y - mainGridRef.current.getBoundingClientRect().top) % (blockSize / 2) || blockSize / 2
-              makePieceDrop(false)
-              if (movingDown()) {
-                coord.y += rate
-                makePieceDrop()
-              } else {
-                stopDroppingOnCollision()
-              }
-              break
-            case ' ':
-              coord.x = rotation(coord.x)
-              db.inputBuffer = db.inputBuffer.filter(key => key !== ' ')  
-              break
-            default:
-              break
+
+        if (db.inputBuffer.includes(' ')) {
+          rotation()
+          db.inputBuffer = db.inputBuffer.filter(key => key !== ' ')  
+        }
+        
+        if (db.inputBuffer.includes("ArrowLeft") && movingLeft()) {
+          db.coord.x -= blockSize
+        } else if (db.inputBuffer.includes("ArrowRight") && movingRight()) {
+          db.coord.x += blockSize
+        }
+        
+        if (db.inputBuffer.includes('ArrowDown')) {
+          makePieceDrop(false)
+
+          if (movingDown()) {
+            const rate = (db.coord.y - mainGridRef.current.getBoundingClientRect().top) % (blockSize) || blockSize
+            db.coord.y += rate
+            makePieceDrop()
+          } else {
+            stopDroppingOnCollision()
           }
-        })
-        db.coord = coord
+        }
       }
     
 
     const refreshCycle = setInterval(() => {
-      if (pieceBlocks) {
+      if (pieceBlocks && db.piece) {
         executeInputs()
         drawPiece(db.coord)
       }
@@ -263,10 +237,15 @@ const MainGrid = ({ container }) => {
     if (gameActive) {
       makePieceDrop()
     }
+
+    
+    if (!movingDown()) {
+      setGameActive(false)
+    }
     
     return () => {
       clearInterval(refreshCycle)
-      clearInterval(makePieceDrop)
+      clearInterval(db.interval)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
     }

@@ -13,7 +13,7 @@ const moveLeft = (mainGridRef, activePieceRef) => {
       if (
         (
           (spaceBounds.top <= blockBounds.top && spaceBounds.bottom - 3 > blockBounds.top) ||
-          (spaceBounds.top < blockBounds.bottom && spaceBounds.bottom > blockBounds.bottom)
+          (spaceBounds.top < blockBounds.bottom && spaceBounds.bottom >= blockBounds.bottom)
         ) && spaceBounds.right === blockBounds.left
       ) {
         collision = true
