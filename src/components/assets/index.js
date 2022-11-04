@@ -76,6 +76,17 @@ export const spawnPiece = () => {
         { x: -0.5, y: -0.5 }
       ]
     },
+    {
+      name: 'tPiece',
+      color: 'green',
+      center: { x: 6.5, y: 1.5 },
+      coordinates: [
+        { x: -0.5, y: 0.5 },
+        { x: -0.5, y: -0.5 },
+        { x: 0.5, y: -0.5 },
+        { x: -0.5, y: -1.5 }
+      ]
+    },
   ]
   const randomIndex = random(pieces.length)
   const randomPiece = pieces.filter((_v, i) => randomIndex === i).pop()

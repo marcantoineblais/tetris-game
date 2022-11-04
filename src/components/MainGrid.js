@@ -16,6 +16,7 @@ const MainGrid = ({ container, db }) => {
 
   const [pieceBlocks, setPieceBlocks] = useState(null)
   const [gameActive, setGameActive] = useState(false)
+  const [gridSpaces, setGridSpaces] = useState(null)
   
   const frame = 16.6
   const mainGridRef = useRef()
@@ -26,10 +27,12 @@ const MainGrid = ({ container, db }) => {
   useEffect(() => {
     const setMainGridSpacesDimensions = () => {
       const mainGrid = mainGridRef.current
-      mainGrid.style.width = container.current.clientWidth > 600 ? '600px' : container.current.clientWidth + 'px'
-      let dimension
-      if (mainGrid.clientWidth < mainGrid.clientHeight && mainGrid.clientHeight <= container.current.clientHeight) {
-        dimension = Math.floor(mainGrid.clientWidth / 120) * 10
+      const containerWidth = container.current.clientWidth
+      const gridHeight = container.current.clientHeight
+      mainGrid.style.width = containerWidth > 600 ? '600px' : containerWidth.toString() + 'px'
+      
+      let dimension = Math.floor(mainGrid.clientWidth / 120) * 10
+      if (dimension * 22 <= gridHeight) {
         mainGrid.style.width = (dimension * 12).toString() + 'px'
         mainGrid.style.height = (dimension * 22).toString() + 'px'
       } else {
@@ -37,12 +40,15 @@ const MainGrid = ({ container, db }) => {
         mainGrid.style.width = (dimension * 12).toString() + 'px'
         mainGrid.style.height = (dimension * 22).toString() + 'px'
       }
+      
       const mainGridSpaces = [].slice.call(mainGridRef.current.children).filter(space => space.classList.contains('grid-space'))
       mainGridSpaces.forEach(el => {
         el.style.width = dimension.toString() + 'px'
         el.style.height = dimension.toString() + 'px'
       })
+    
       setBlockSize(dimension)
+      setGridSpaces(mainGridSpaces)
     }
     
     setMainGridSpacesDimensions()
@@ -72,7 +78,7 @@ const MainGrid = ({ container, db }) => {
           left: coordX.toString() + 'px',
           top: coordY.toString() + 'px'
         }
-        blocks.push(<div className={'active-block ' + piece.color} style={style} key={i}>{}</div>)
+        blocks.push(<div className={'active-block ' + piece.color} style={style} key={i}></div>)
       })
       
       const coordX = piece.center.x * blockSize
@@ -83,7 +89,7 @@ const MainGrid = ({ container, db }) => {
       pieceRef.current.style.top = top
       pieceRef.current.style.left = left
       db.coord = { x: coordX, y: coordY }
-
+      db.initY = coordY
       setPieceBlocks(blocks)
     }
 
@@ -120,37 +126,35 @@ const MainGrid = ({ container, db }) => {
     window.addEventListener('keyup', onKeyUp)
 
     // PIECE EVERY FRAME
-    const drawPiece = (coord) => {
-      pieceRef.current.style.left = coord.x.toString() + 'px'
-      pieceRef.current.style.top = coord.y.toString() + 'px'
+    const drawPiece = () => {
+      pieceRef.current.style.left = db.coord.x.toString() + 'px'
+      pieceRef.current.style.top = db.coord.y.toString() + 'px'
     }
 
     // CHECKS FOR MOVEMENT AND COLLISIONS
-    const movingDown = () => {
-      return moveDown(mainGridRef, pieceRef)
-    }
-    
-    const movingRight = () => {
-      return moveRight(mainGridRef, pieceRef)
-    }
-    
     const movingLeft = () => {
       return moveLeft(mainGridRef, pieceRef)
     }
 
-    const rotation = (coordX) => {
+    const movingRight = () => {
+      return moveRight(mainGridRef, pieceRef)
+    }
+    const movingDown = () => {
+      return moveDown(mainGridRef, pieceRef)
+    }
+    
+    const rotation = () => {
       if (!rotate(mainGridRef, pieceRef)) {
         if (rotate(mainGridRef, pieceRef, -blockSize)) {
-          return coordX -= blockSize
+          db.coord.x -= blockSize
         } else if (rotate(mainGridRef, pieceRef, blockSize)) {
-          return coordX += blockSize
+          db.coord.x += blockSize
         } else if (rotate(mainGridRef, pieceRef, -2 * blockSize)) {
-          return coordX += -2 * blockSize
+          db.coord.x += -2 * blockSize
         } else if (rotate(mainGridRef, pieceRef, 2 * blockSize)) {
-          return coordX += 2 * blockSize
+          db.coord.x += 2 * blockSize
         }
       }
-      return coordX
     }
 
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
@@ -214,9 +218,9 @@ const MainGrid = ({ container, db }) => {
         
         if (db.inputBuffer.includes('ArrowDown')) {
           makePieceDrop(false)
-
           if (movingDown()) {
-            const rate = (db.coord.y - mainGridRef.current.getBoundingClientRect().top) % (blockSize) || blockSize
+            const rate = blockSize - ((db.coord.y + db.initY) % blockSize)
+            console.log('position : ' + db.coord.y + '  rate : ' + rate);
             db.coord.y += rate
             makePieceDrop()
           } else {
@@ -228,8 +232,8 @@ const MainGrid = ({ container, db }) => {
 
     const refreshCycle = setInterval(() => {
       if (pieceBlocks && db.piece) {
+        drawPiece()
         executeInputs()
-        drawPiece(db.coord)
       }
     }, frame)
     

@@ -1,6 +1,7 @@
 
-const rotate = (mainGridRef, activePieceRef, offset = 0) => {
+const rotate = (mainGridRef, pieceRef, offset = 0) => {
 
+  const piece = pieceRef.current
   const checkForCollision = (blockBounds, mainGridRef, offSet) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
     if (
@@ -29,18 +30,18 @@ const rotate = (mainGridRef, activePieceRef, offset = 0) => {
     return collision
   }
 
-  const deg = parseInt(activePieceRef.current.style.transform.slice(7)) || 0
-  activePieceRef.current.style.transform = `rotate(${(deg + 90) % 360}deg)`
+  const deg = parseInt(piece.style.transform.slice(7)) || 0
+  piece.style.transform = `rotate(${(deg + 90) % 360}deg)`
 
   let collision
-  [].slice.call(activePieceRef.current.children).forEach((block) => {
+  [].slice.call(piece.children).forEach((block) => {
     if (checkForCollision(block.getBoundingClientRect(), mainGridRef, offset)) {
       collision = true
     }
   })
   
   if (collision) {
-    activePieceRef.current.style.transform = `rotate(${deg}deg)`
+    piece.style.transform = `rotate(${deg}deg)`
     return false
   }
 
