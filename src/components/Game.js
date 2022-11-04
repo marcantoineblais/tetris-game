@@ -10,7 +10,10 @@ const Game = () => {
   useEffect(() => {
     // CREATE LOCAL DB IN BROWSER
     const database = {}
-    database.inputBuffer = []
+    database.shortPush = []
+    database.longPush = []
+    database.inputBlock = {}
+    database.buffer = {}
     database.score = 0
     database.destroyedLines = 0
     database.dropRate = 1
