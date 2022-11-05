@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
 import { spawnPiece } from "./assets"
-import { wait } from "../helpers"
 import destroyLines from "./mouvements/destroyLines"
 import moveLeft from "./mouvements/moveLeft"
 import moveRight from "./mouvements/moveRight"
@@ -18,7 +17,7 @@ const MainGrid = ({ container, db }) => {
   const [gameActive, setGameActive] = useState(false)
   const [gridSpaces, setGridSpaces] = useState(null)
   
-  const frame = 16.6
+  const frame = 1000 / 60
   const mainGridRef = useRef()
   const pieceRef = useRef()
 
@@ -88,22 +87,29 @@ const MainGrid = ({ container, db }) => {
       
       pieceRef.current.style.top = top
       pieceRef.current.style.left = left
+      pieceRef.current.style.transform = ''
       db.coord = { x: coordX, y: coordY }
       db.initY = coordY
       setPieceBlocks(blocks)
     }
 
+    if (!db.nextPiece) {
+      db.nextPiece = spawnPiece()
+    }
+
     let piece = spawnPiece()
-    while (piece === db.piece) {
+    while (piece.name === db.nextPiece.name) {
       piece = spawnPiece()
     }
-    db.piece = piece
-    renderPiece(piece)
+
+    db.piece = db.nextPiece
+    db.nextPiece = piece
+    renderPiece(db.piece)
   }, [db, pieceBlocks, blockSize])
   
   useEffect(() => {
     
-    if (!db) {
+    if (!db || !gameActive) {
       return
     }
 
@@ -148,7 +154,7 @@ const MainGrid = ({ container, db }) => {
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
 
-    // PIECE EVERY FRAME
+    // RENDER PIECE EVERY FRAME
     const drawPiece = () => {
       pieceRef.current.style.left = db.coord.x.toString() + 'px'
       pieceRef.current.style.top = db.coord.y.toString() + 'px'
@@ -162,8 +168,9 @@ const MainGrid = ({ container, db }) => {
     const movingRight = () => {
       return moveRight(mainGridRef, pieceRef)
     }
-    const movingDown = () => {
-      return moveDown(mainGridRef, pieceRef)
+
+    const movingDown = (offset = 0) => {
+      return moveDown(mainGridRef, pieceRef, offset)
     }
     
     const rotation = () => {
@@ -180,14 +187,42 @@ const MainGrid = ({ container, db }) => {
       }
     }
 
+    const ghostPiece = () => {
+      let offset = 0
+      while (movingDown(offset + blockSize - (offset % blockSize))) {
+        offset += blockSize - (offset % blockSize)
+      }
+
+      if (offset) {
+        const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.getBoundingClientRect())
+        const ghostBlockSpaces = []
+        blockBounds.forEach(bounds => {
+          const ghostBlock = gridSpaces.filter((space) => {
+            space.classList.remove('ghost-piece')
+            space.style.borderColor = 'black'
+            const spaceRect = space.getBoundingClientRect()
+            return (
+              spaceRect.left === bounds.left &&
+              spaceRect.top <= bounds.bottom + offset &&
+              spaceRect.bottom >= bounds.bottom + offset
+            )
+          }).pop()
+          ghostBlockSpaces.push(ghostBlock)
+        })
+  
+        ghostBlockSpaces.forEach(space => {
+          space.classList.add('ghost-piece')
+          space.style.borderColor = db.piece.color
+        })
+      }
+      db.redrawGhostPiece = false
+    }
+
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
     const stopDroppingOnCollision = () => {
       makePieceDrop(false)
       db.buffer.stopDropping = setTimeout(() => {
-        if (movingDown()) {
-          makePieceDrop()
-        } else {
-          makePieceDrop(false);
+        if (!movingDown()) {
           [].slice.call(pieceRef.current.children).forEach((block) => {
             const blockBounds = block.getBoundingClientRect()
             const blockBoundsX = (blockBounds.right + blockBounds.left) / 2
@@ -206,79 +241,90 @@ const MainGrid = ({ container, db }) => {
           })
           
           clearInterval(refreshCycle)
-          makePieceDrop(false)
-          setPieceBlocks(null)
+          db.inputLock = true
           const numOfLines = destroyLines(mainGridRef)
           db.destroyedLines = numOfLines
+          makePieceDrop(false)
+          setPieceBlocks(null)
         }
+        clearTimeout(db.buffer.stopDropping)
         delete db.buffer.stopDropping
       }, 6 * frame) 
     }
       
-      // MAKE PIECE FALL EVERY FRAME FOR 1 SPACE EVERY DROPSPEED TIME (MILLISECONDS)
-      const makePieceDrop = (bool = true) => {
-        const dropping = () => {
-          if (pieceBlocks && movingDown()) {
-            db.coord.y += db.dropRate
-          } else {
-            clearInterval(db.interval)
-            stopDroppingOnCollision()
-          }
-        }
-        const interval = dropSpeed / frame
-          
-        if (bool) {
-          db.interval = setInterval(dropping, interval)
+    // MAKE PIECE FALL EVERY FRAME FOR 1 SPACE EVERY DROPSPEED TIME (MILLISECONDS)
+    const makePieceDrop = (bool = true) => {
+      const dropping = () => {
+        if (pieceBlocks && movingDown()) {
+          db.coord.y += blockSize / (dropSpeed / frame)
         } else {
           clearInterval(db.interval)
+          stopDroppingOnCollision()
         }
-      }  
-      
-      // EXECUTE INPUTS FROM BUFFER EVERY FRAME WHEN NO COLLISION DETECTED
-      const executeInputs = () => {
-        [db.shortPush, db.longPush].forEach((inputs) => {
-          if (inputs.includes(' ')) {
-            rotation()
-            db.shortPush = db.shortPush.filter(key => key !== ' ')  
-          }
-
-          if (inputs.includes("ArrowLeft") && movingLeft()) {
-            db.coord.x -= blockSize
-            db.shortPush = db.shortPush.filter(key => key !== 'ArrowLeft')
-          } else if (inputs.includes("ArrowRight") && movingRight()) {
-            db.coord.x += blockSize
-            db.shortPush = db.shortPush.filter(key => key !== 'ArrowRight')
-          }
-          
-          if (inputs.includes('ArrowDown')) {
-            makePieceDrop(false)
-            const rate = blockSize - ((db.coord.y + db.initY) % blockSize)
-            if (!db.buffer.stopDropping && movingDown()) {
-              db.coord.y += rate
-              makePieceDrop()
-            } else {
-              stopDroppingOnCollision()
-            }
-            db.shortPush = db.shortPush.filter(key => key !== 'ArrowDown')
-          }
-        })
       }
         
-    
+      if (bool) {
+        db.interval = setInterval(dropping, frame)
+      } else {
+        clearInterval(db.interval)
+      }
+    }  
+      
+    // EXECUTE INPUTS FROM BUFFER EVERY FRAME WHEN NO COLLISION DETECTED
+    const executeInputs = () => {
+      if (db.inputLock) {
+        return
+      }
+
+      [db.shortPush, db.longPush].forEach((inputs) => {
+        if (inputs.includes(' ')) {
+          rotation()
+          db.redrawGhostPiece = true
+          db.shortPush = db.shortPush.filter(key => key !== ' ')  
+        }
+
+        if (inputs.includes("ArrowLeft") && movingLeft()) {
+          db.coord.x -= blockSize
+          db.redrawGhostPiece = true
+          db.shortPush = db.shortPush.filter(key => key !== 'ArrowLeft')
+        } else if (inputs.includes("ArrowRight") && movingRight()) {
+          db.coord.x += blockSize
+          db.redrawGhostPiece = true
+          db.shortPush = db.shortPush.filter(key => key !== 'ArrowRight')
+        }
+        
+        if (inputs.includes('ArrowDown')) {
+          makePieceDrop(false)
+          const rate = blockSize - ((db.coord.y + db.initY) % blockSize)
+          if (!db.buffer.stopDropping && movingDown()) {
+            db.coord.y += rate
+            makePieceDrop()
+          } else {
+            stopDroppingOnCollision()
+          }
+          db.shortPush = db.shortPush.filter(key => key !== 'ArrowDown')
+        }
+      })
+    }
 
     const refreshCycle = setInterval(() => {
       if (pieceBlocks && db.piece) {
         drawPiece()
+        if (db.redrawGhostPiece) {
+          ghostPiece()
+        }
         executeInputs()
       }
     }, frame)
     
-
-    if (gameActive) {
-      makePieceDrop()
+    if (gameActive && pieceBlocks) {
+      ghostPiece()
+      setTimeout(() => {
+        makePieceDrop()
+        db.inputLock = false
+      }, 30 * frame)
     }
 
-    
     if (!movingDown()) {
       setGameActive(false)
     }
@@ -289,7 +335,7 @@ const MainGrid = ({ container, db }) => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
     }
-  }, [blockSize, dropSpeed, pieceBlocks, db, gameActive])
+  }, [blockSize, dropSpeed, pieceBlocks, db, gameActive, gridSpaces, frame])
 
 
   const renderedGridSpaces = () => {

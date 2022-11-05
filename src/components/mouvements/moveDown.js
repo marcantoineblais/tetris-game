@@ -1,9 +1,9 @@
 
-const moveDown = (mainGridRef, pieceRef) => {
+const moveDown = (mainGridRef, pieceRef, offset) => {
 
   const checkForCollision = (blockBounds) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-    if (blockBounds.bottom >= mainGridBounds.bottom) {
+    if (blockBounds.bottom + offset >= mainGridBounds.bottom) {
       return true
     }
 
@@ -11,7 +11,7 @@ const moveDown = (mainGridRef, pieceRef) => {
     [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
       const spaceBounds = space.getBoundingClientRect()
       if (
-        spaceBounds.top <= blockBounds.bottom && spaceBounds.bottom >= blockBounds.bottom &&
+        spaceBounds.top <= blockBounds.bottom + offset && spaceBounds.bottom >= blockBounds.bottom + offset &&
         spaceBounds.left <= blockBounds.left && spaceBounds.right >= blockBounds.right
       ) {
         collision = true

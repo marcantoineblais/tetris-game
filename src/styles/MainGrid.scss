@@ -47,4 +47,10 @@
   .black {
     background-color: black;
   }
+
+  .ghost-piece {
+    border: 5px solid;
+    background: linear-gradient(90deg, silver, silver, silver, grey);
+    opacity: 0.3;
+  }
 }
