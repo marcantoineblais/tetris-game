@@ -1,9 +1,12 @@
 .game {
   height: 100%;
   width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 1em;
 
   .game-main-grid {
     height: 100%;
-    width: 100%;
+    width: fit-content;
   }
 }

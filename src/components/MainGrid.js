@@ -6,10 +6,7 @@ import moveRight from "./mouvements/moveRight"
 import moveDown from "./mouvements/moveDown"
 import rotate from "./mouvements/rotate"
 
-const MainGrid = ({ container, db }) => {
-
-  // width and height of a block
-  const [blockSize, setBlockSize] = useState(null)
+const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece }) => {
   // num of milliseconds to fall 1 block
   const [dropSpeed, setDropSpeed] = useState(750)
 
@@ -56,7 +53,7 @@ const MainGrid = ({ container, db }) => {
     return () => {
       window.removeEventListener('resize', setMainGridSpacesDimensions)
     }
-  }, [container])
+  }, [container, setBlockSize])
   
 
   useEffect(() => {
@@ -104,8 +101,9 @@ const MainGrid = ({ container, db }) => {
 
     db.piece = db.nextPiece
     db.nextPiece = piece
+    setNextPiece(piece)
     renderPiece(db.piece)
-  }, [db, pieceBlocks, blockSize])
+  }, [db, pieceBlocks, blockSize, setNextPiece])
   
   useEffect(() => {
     

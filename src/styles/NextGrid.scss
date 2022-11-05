@@ -1,0 +1,41 @@
+.next-grid {
+  position: relative;
+  border: 2px black solid;
+
+  .next-piece {
+    position: absolute;
+    border: 1px solid grey;
+  }
+
+  .pink {
+    background-color: pink;
+  }
+
+  .orange {
+    background-color: orange;
+  }
+
+  .purple {
+    background-color: purple;
+  }
+
+  .blue {
+    background-color: blue;
+  }
+
+  .green {
+    background-color: green;
+  }
+
+  .red {
+    background-color: red;
+  }
+
+  .grey {
+    background-color: grey;
+  }
+
+  .black {
+    background-color: black;
+  }
+}

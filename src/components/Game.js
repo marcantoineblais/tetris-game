@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react"
 import MainGrid from "./MainGrid"
+import NextPieceGrid from "./NextPieceGrid"
 
 const Game = () => {
 
   const [db, setDB] = useState(null)
-
+  const [blockSize, setBlockSize] = useState(null)
+  const [nextPiece, setNextPiece] = useState(null)
   const containerRef = useRef()
 
   useEffect(() => {
@@ -23,7 +25,19 @@ const Game = () => {
   return (
     <div className="game">
       <div ref={containerRef} className="game-main-grid">
-        <MainGrid container = {containerRef} db={db} />
+        <MainGrid
+          container={containerRef}
+          db={db}
+          blockSize={blockSize}
+          setBlockSize={setBlockSize}
+          setNextPiece={setNextPiece}
+        />
+      </div>
+      <div className="game-next-grid">
+        <NextPieceGrid
+          piece={nextPiece}
+          blockSize={blockSize}
+        />
       </div>
     </div>
   )
