@@ -2,11 +2,21 @@
   height: 100%;
   width: 100%;
   display: flex;
-  justify-content: center;
-  gap: 1em;
+  flex-direction: column;
+  justify-items: center;
 
-  .game-main-grid {
+  .grid {
+    width: 100%;
     height: 100%;
-    width: fit-content;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+
+    .game-main-grid {
+      height: 100%;
+      width: 100;
+      border: 2px solid black;
+      border-radius: 8px;
+    }
   }
 }

@@ -6,7 +6,7 @@ import moveRight from "./mouvements/moveRight"
 import moveDown from "./mouvements/moveDown"
 import rotate from "./mouvements/rotate"
 
-const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece }) => {
+const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setScore, setLevel }) => {
   // num of milliseconds to fall 1 block
   const [dropSpeed, setDropSpeed] = useState(750)
 
@@ -45,6 +45,8 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece }) => {
     
       setBlockSize(dimension)
       setGridSpaces(mainGridSpaces)
+      container.current.style.width = 'fit-content'
+      container.current.style.height = 'fit-content'
     }
     
     setMainGridSpacesDimensions()
@@ -81,10 +83,13 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece }) => {
       const coordY = piece.center.y * blockSize
       const left = coordX.toString() + 'px'
       const top = coordY.toString() + 'px'
+      const shadow = `${blockSize}px ${blockSize / 5}px ${db.piece.color}` 
       
+
       pieceRef.current.style.top = top
       pieceRef.current.style.left = left
       pieceRef.current.style.transform = ''
+      pieceRef.current.style.boxShadow = shadow
       db.coord = { x: coordX, y: coordY }
       db.initY = coordY
       setPieceBlocks(blocks)
@@ -186,9 +191,9 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece }) => {
     }
 
     const ghostPiece = () => {
-      let offset = 0
+      let offset = (db.coord.y + db.initY) % blockSize
       while (movingDown(offset + blockSize - (offset % blockSize))) {
-        offset += blockSize - (offset % blockSize)
+        offset += blockSize
       }
 
       if (offset) {

@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from "react"
 import MainGrid from "./MainGrid"
 import NextPieceGrid from "./NextPieceGrid"
+import Stats from "./Stats"
 
 const Game = () => {
 
   const [db, setDB] = useState(null)
   const [blockSize, setBlockSize] = useState(null)
   const [nextPiece, setNextPiece] = useState(null)
+  const [score, setScore] = useState(null)
+  const [level, setLevel] = useState(null)
   const containerRef = useRef()
 
   useEffect(() => {
@@ -16,7 +19,6 @@ const Game = () => {
     database.longPush = []
     database.inputBlock = {}
     database.buffer = {}
-    database.score = 0
     database.destroyedLines = 0
     database.dropRate = 1
     setDB(database)
@@ -24,20 +26,30 @@ const Game = () => {
 
   return (
     <div className="game">
-      <div ref={containerRef} className="game-main-grid">
-        <MainGrid
-          container={containerRef}
-          db={db}
-          blockSize={blockSize}
-          setBlockSize={setBlockSize}
-          setNextPiece={setNextPiece}
+      <div className="game-stats">
+        <Stats
+          score={score}
+          level={level}
         />
       </div>
-      <div className="game-next-grid">
-        <NextPieceGrid
-          piece={nextPiece}
-          blockSize={blockSize}
-        />
+      <div className="grid">
+        <div ref={containerRef} className="game-main-grid">
+          <MainGrid
+            container={containerRef}
+            db={db}
+            blockSize={blockSize}
+            setBlockSize={setBlockSize}
+            setNextPiece={setNextPiece}
+            setScore={setScore}
+            setLevel={setLevel}
+          />
+        </div>
+        <div className="game-next-grid">
+          <NextPieceGrid
+            piece={nextPiece}
+            blockSize={blockSize}
+          />
+        </div>
       </div>
     </div>
   )
