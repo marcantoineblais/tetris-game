@@ -1,18 +1,31 @@
 
-const moveDown = (mainGridRef, pieceRef, offset) => {
+const moveDown = (mainGridRef, pieceRef, rate) => {
 
   const checkForCollision = (blockBounds) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-    if (blockBounds.bottom + offset >= mainGridBounds.bottom) {
+    if (blockBounds.bottom + rate > mainGridBounds.bottom) {
+      console.log(blockBounds.bottom);
+      console.log(mainGridBounds.bottom);
+      console.log(rate);
       return true
+    }
+
+    const blockBoundsX = []
+    const blockBoundsY = []
+    for (let i = blockBounds.left; i <= blockBounds.right; i++){
+      blockBoundsX.push(i)
+    }
+
+    for (let i = blockBounds.top; i <= blockBounds.bottom; i++){
+      blockBoundsY.push(i + rate)
     }
 
     let collision
     [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
       const spaceBounds = space.getBoundingClientRect()
       if (
-        spaceBounds.top <= blockBounds.bottom + offset && spaceBounds.bottom >= blockBounds.bottom + offset &&
-        spaceBounds.left <= blockBounds.left && spaceBounds.right >= blockBounds.right
+          blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
+          blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom)
       ) {
         collision = true
       }

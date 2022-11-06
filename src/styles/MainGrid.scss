@@ -2,13 +2,15 @@
   position: relative;
   margin: 0 auto;
   height: 100%;
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
   overflow: hidden;
 
-  .grid-space {
-    border: 1px solid black;
+  .active-block,
+  .taken {
+    border: 2px solid rgb(240, 240, 240)
   }
 
   .active-block {

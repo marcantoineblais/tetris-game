@@ -4,6 +4,7 @@
   display: flex;
   flex-direction: column;
   justify-items: center;
+  background-color: rgb(50, 40, 50);
 
   .grid {
     width: 100%;
@@ -14,9 +15,10 @@
 
     .game-main-grid {
       height: 100%;
-      width: 100;
+      width: 100%;
       border: 2px solid black;
       border-radius: 8px;
+      background-color: rgba(0, 0, 0, 0.8);
     }
   }
 }

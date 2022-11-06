@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 import { spawnPiece } from "./assets"
 import destroyLines from "./mouvements/destroyLines"
-import moveLeft from "./mouvements/moveLeft"
-import moveRight from "./mouvements/moveRight"
+import moveX from "./mouvements/moveX"
 import moveDown from "./mouvements/moveDown"
 import rotate from "./mouvements/rotate"
 
@@ -165,15 +164,15 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
 
     // CHECKS FOR MOVEMENT AND COLLISIONS
     const movingLeft = () => {
-      return moveLeft(mainGridRef, pieceRef)
+      return moveX(mainGridRef, pieceRef, -blockSize)
     }
 
     const movingRight = () => {
-      return moveRight(mainGridRef, pieceRef)
+      return moveX(mainGridRef, pieceRef, blockSize)
     }
 
-    const movingDown = (offset = 0) => {
-      return moveDown(mainGridRef, pieceRef, offset)
+    const movingDown = (rate) => {
+      return moveDown(mainGridRef, pieceRef, rate)
     }
     
     const rotation = () => {
@@ -191,123 +190,126 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
     }
 
     const ghostPiece = () => {
-      let offset = (db.coord.y + db.initY) % blockSize
-      while (movingDown(offset + blockSize - (offset % blockSize))) {
-        offset += blockSize
+      if (!movingDown()) {
+        db.redrawGhostPiece = false
+        return
+      }
+      
+      let offsetY = blockSize - (db.coord.y + db.initY) % (blockSize / 2)
+      while (movingDown(offsetY)) {
+        offsetY += blockSize / 2
       }
 
-      if (offset) {
-        const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.getBoundingClientRect())
-        const ghostBlockSpaces = []
-        blockBounds.forEach(bounds => {
-          const ghostBlock = gridSpaces.filter((space) => {
-            space.classList.remove('ghost-piece')
-            space.style.borderColor = 'black'
-            const spaceRect = space.getBoundingClientRect()
-            return (
-              spaceRect.left === bounds.left &&
-              spaceRect.top <= bounds.bottom + offset &&
-              spaceRect.bottom >= bounds.bottom + offset
-            )
-          }).pop()
-          ghostBlockSpaces.push(ghostBlock)
-        })
-  
-        ghostBlockSpaces.forEach(space => {
-          space.classList.add('ghost-piece')
-          space.style.borderColor = db.piece.color
-        })
+      const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.getBoundingClientRect())
+      const ghostBlockSpaces = blockBounds.map(bounds => {
+        const boundsX = (bounds.left + bounds.right) / 2
+        const boundsY = ((bounds.top + bounds.bottom) / 2) + offsetY
+        const ghostBlock = gridSpaces.filter((space) => {
+          space.classList.remove('ghost-piece')
+          space.style.borderColor = 'rgb(240, 240, 240)'
+          const spaceRect = space.getBoundingClientRect()
+          return (
+            spaceRect.left < boundsX && spaceRect.right > boundsX &&
+            spaceRect.top < boundsY && spaceRect.bottom > boundsY &&
+            !space.classList.contains('active-block')
+          )
+        }).pop()
+        return ghostBlock
+      })
+
+      if (ghostBlockSpaces.some(space => !space)) {
+        db.redrawGhostPiece = false
+        return
       }
+
+      ghostBlockSpaces.forEach(space => {
+        space.classList.add('ghost-piece')
+        space.style.borderColor = db.piece.color
+      })
+      
       db.redrawGhostPiece = false
     }
 
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
     const stopDroppingOnCollision = () => {
-      makePieceDrop(false)
-      db.buffer.stopDropping = setTimeout(() => {
-        if (!movingDown()) {
-          [].slice.call(pieceRef.current.children).forEach((block) => {
-            const blockBounds = block.getBoundingClientRect()
-            const blockBoundsX = (blockBounds.right + blockBounds.left) / 2
-            const blockBoundsY = (blockBounds.bottom + blockBounds.top) / 2
-            
-            const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
-              const spaceRect = space.getBoundingClientRect()
-              return (
-                spaceRect.left < blockBoundsX && spaceRect.right > blockBoundsX &&
-                spaceRect.top < blockBoundsY && spaceRect.bottom > blockBoundsY &&
-                !space.classList.contains('active-block')
-                )
-              }).pop()
-            
-            takenSpace.classList.add('taken', db.piece.color)
-          })
-          
-          clearInterval(refreshCycle)
-          db.inputLock = true
-          const numOfLines = destroyLines(mainGridRef)
-          db.destroyedLines = numOfLines
-          makePieceDrop(false)
-          setPieceBlocks(null)
-        }
-        clearTimeout(db.buffer.stopDropping)
-        delete db.buffer.stopDropping
-      }, 6 * frame) 
-    }
-      
-    // MAKE PIECE FALL EVERY FRAME FOR 1 SPACE EVERY DROPSPEED TIME (MILLISECONDS)
-    const makePieceDrop = (bool = true) => {
-      const dropping = () => {
-        if (pieceBlocks && movingDown()) {
-          db.coord.y += blockSize / (dropSpeed / frame)
-        } else {
-          clearInterval(db.interval)
-          stopDroppingOnCollision()
-        }
-      }
+      [].slice.call(pieceRef.current.children).forEach((block) => {
+        const blockBounds = block.getBoundingClientRect()
+        const blockBoundsX = (blockBounds.right + blockBounds.left) / 2
+        const blockBoundsY = (blockBounds.bottom + blockBounds.top) / 2
         
-      if (bool) {
-        db.interval = setInterval(dropping, frame)
-      } else {
-        clearInterval(db.interval)
-      }
-    }  
+        const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
+          const spaceRect = space.getBoundingClientRect()
+          return (
+            spaceRect.left < blockBoundsX && spaceRect.right > blockBoundsX &&
+            spaceRect.top < blockBoundsY && spaceRect.bottom > blockBoundsY &&
+            !space.classList.contains('active-block')
+            )
+          }).pop()
+        
+        takenSpace.classList.add('taken', db.piece.color)
+      })
       
+      clearInterval(refreshCycle)
+      db.inputLock = true
+      const numOfLines = destroyLines(mainGridRef)
+      db.destroyedLines = numOfLines
+      setPieceBlocks(null)
+    }
+
+    // BUFFER PERIOD TO MOVE A PIECE ONCE IT LANDED
+    const beforeCollision = (rate) => {
+      if (db.fallBufferTimeout) {
+        return
+      }
+
+      db.fallBufferTimeout = setTimeout(() => {
+        if (pieceBlocks && movingDown(rate)) {
+          db.coord.y += rate
+          drawPiece()
+        } else {
+          clearTimeout(db.fallBufferTimeout)
+          stopDroppingOnCollision()
+          delete db.fallBufferTimeout
+        }
+      }, 6 * frame)
+    }
+          
     // EXECUTE INPUTS FROM BUFFER EVERY FRAME WHEN NO COLLISION DETECTED
     const executeInputs = () => {
       if (db.inputLock) {
         return
       }
 
-      [db.shortPush, db.longPush].forEach((inputs) => {
-        if (inputs.includes(' ')) {
-          rotation()
-          db.redrawGhostPiece = true
-          db.shortPush = db.shortPush.filter(key => key !== ' ')  
-        }
-
-        if (inputs.includes("ArrowLeft") && movingLeft()) {
-          db.coord.x -= blockSize
-          db.redrawGhostPiece = true
-          db.shortPush = db.shortPush.filter(key => key !== 'ArrowLeft')
-        } else if (inputs.includes("ArrowRight") && movingRight()) {
-          db.coord.x += blockSize
-          db.redrawGhostPiece = true
-          db.shortPush = db.shortPush.filter(key => key !== 'ArrowRight')
-        }
-        
-        if (inputs.includes('ArrowDown')) {
-          makePieceDrop(false)
-          const rate = blockSize - ((db.coord.y + db.initY) % blockSize)
-          if (!db.buffer.stopDropping && movingDown()) {
-            db.coord.y += rate
-            makePieceDrop()
-          } else {
-            stopDroppingOnCollision()
-          }
-          db.shortPush = db.shortPush.filter(key => key !== 'ArrowDown')
-        }
-      })
+      const inputs = db.shortPush.concat(db.longPush)
+      if (inputs.includes(' ')) {
+        rotation()
+        db.redrawGhostPiece = true
+      }
+      
+      if (inputs.includes("ArrowLeft") && movingLeft()) {
+        db.coord.x -= blockSize
+        db.redrawGhostPiece = true
+        drawPiece()
+      } else if (inputs.includes("ArrowRight") && movingRight()) {
+        db.coord.x += blockSize
+        db.redrawGhostPiece = true
+        drawPiece()
+      }
+      
+      let rate
+      if (inputs.includes('ArrowDown')) {
+        rate = blockSize - ((db.coord.y + db.initY) % blockSize) 
+      } else {
+        rate = blockSize / (dropSpeed / frame)
+      }
+      if (movingDown(rate)) {
+        db.coord.y += rate
+        drawPiece()
+      } else {
+        beforeCollision(rate)
+      }
+      
+      db.shortPush = []
     }
 
     const refreshCycle = setInterval(() => {
@@ -323,7 +325,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
     if (gameActive && pieceBlocks) {
       ghostPiece()
       setTimeout(() => {
-        makePieceDrop()
         db.inputLock = false
       }, 30 * frame)
     }
