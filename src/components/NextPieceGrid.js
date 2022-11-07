@@ -47,8 +47,11 @@ const NextPieceGrid = ({ piece, blockSize }) => {
   }, [piece, blockSize])
 
   return (
-    <div ref={containerRef} className="next-grid">{}
-      <div ref={nextPieceRef} style={{ position: 'absolute' }}>{nextPiece}</div>
+    <div className="next-grid-content">
+      <h2>COMING NEXT</h2>
+      <div ref={containerRef} className="grid">
+        <div ref={nextPieceRef} style={{ position: 'absolute' }}>{nextPiece}</div>
+      </div>
     </div>
   )
 }

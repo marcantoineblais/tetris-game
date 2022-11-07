@@ -4,9 +4,6 @@ const moveDown = (mainGridRef, pieceRef, rate) => {
   const checkForCollision = (blockBounds) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
     if (blockBounds.bottom + rate > mainGridBounds.bottom) {
-      console.log(blockBounds.bottom);
-      console.log(mainGridBounds.bottom);
-      console.log(rate);
       return true
     }
 
@@ -25,7 +22,7 @@ const moveDown = (mainGridRef, pieceRef, rate) => {
       const spaceBounds = space.getBoundingClientRect()
       if (
           blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
-          blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom)
+          blockBoundsY.some(n => n > spaceBounds.top && n <= spaceBounds.bottom)
       ) {
         collision = true
       }

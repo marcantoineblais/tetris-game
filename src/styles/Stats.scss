@@ -1,5 +1,19 @@
 .stats {
   display: flex;
-  justify-content: center;
-  height: 40px;
+  flex-direction: column;
+  align-items: center;
+  color: rgb(240, 240, 240);
+
+  h2, h3 {
+    margin: 0;
+    padding: 0.25em;
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
 }

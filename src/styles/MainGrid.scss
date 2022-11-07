@@ -6,7 +6,10 @@
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
-  overflow: hidden;
+
+  .grid-space {
+    background: transparent;
+  }
 
   .active-block,
   .taken {
@@ -20,38 +23,38 @@
   .pink {
     background-color: pink;
   }
-
+  
   .orange {
     background-color: orange;
   }
-
+  
   .purple {
     background-color: purple;
   }
-
+  
   .blue {
     background-color: blue;
   }
-
+  
   .green {
     background-color: green;
   }
-
+  
   .red {
     background-color: red;
   }
-
+  
   .grey {
     background-color: grey;
   }
-
+  
   .black {
     background-color: black;
   }
 
   .ghost-piece {
-    border: 5px solid;
+    border: 2px solid;
     background: linear-gradient(90deg, silver, silver, silver, grey);
-    opacity: 0.3;
+    opacity: 0.1;
   }
 }

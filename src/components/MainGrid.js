@@ -5,15 +5,15 @@ import moveX from "./mouvements/moveX"
 import moveDown from "./mouvements/moveDown"
 import rotate from "./mouvements/rotate"
 
-const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setScore, setLevel }) => {
+const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, incrementScore, setLevel, level }) => {
   // num of milliseconds to fall 1 block
-  const [dropSpeed, setDropSpeed] = useState(750)
+  const [dropSpeed, setDropSpeed] = useState(800)
 
   const [pieceBlocks, setPieceBlocks] = useState(null)
   const [gameActive, setGameActive] = useState(false)
   const [gridSpaces, setGridSpaces] = useState(null)
-  
   const frame = 1000 / 60
+  
   const mainGridRef = useRef()
   const pieceRef = useRef()
 
@@ -115,6 +115,25 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
       return
     }
 
+    // GAME SCORE AND LEVEL PARAMETERS
+    const scoreChart = { 0: 0, 1: 40, 2: 100, 3: 300, 4: 1200 }
+    const levelChart = {
+      1: 43 * frame,
+      2: 38 * frame,
+      3: 33 * frame,
+      4: 28 * frame,
+      5: 25 * frame,
+      6: 18 * frame,
+      7: 13 * frame,
+      8: 8 * frame,
+      9: 6 * frame,
+      10: 5 * frame,
+      13: 4 * frame,
+      16: 3 * frame,
+      19: 2 * frame,
+      29: 1 * frame
+    }
+
     // CREATE EVENT LISTENER FOR CONTROLS
     const onKeyDown = (e) => {
       const movementKeys = ['ArrowLeft', 'ArrowRight', 'ArrowDown']
@@ -190,28 +209,36 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
     }
 
     const ghostPiece = () => {
-      if (!movingDown()) {
+      let offsetY = blockSize
+      if (!movingDown(offsetY)) {
         db.redrawGhostPiece = false
         return
       }
       
-      let offsetY = blockSize - (db.coord.y + db.initY) % (blockSize / 2)
-      while (movingDown(offsetY)) {
-        offsetY += blockSize / 2
+      while (movingDown(offsetY + blockSize)) {
+        offsetY += blockSize
       }
 
       const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.getBoundingClientRect())
       const ghostBlockSpaces = blockBounds.map(bounds => {
-        const boundsX = (bounds.left + bounds.right) / 2
-        const boundsY = ((bounds.top + bounds.bottom) / 2) + offsetY
+        
+        const blockBoundsX = []
+        const blockBoundsY = []
+        for (let i = bounds.left; i <= bounds.right; i++){
+          blockBoundsX.push(i)
+        }
+    
+        for (let i = bounds.top; i <= bounds.bottom; i++){
+          blockBoundsY.push(i + offsetY)
+        }
+
         const ghostBlock = gridSpaces.filter((space) => {
           space.classList.remove('ghost-piece')
           space.style.borderColor = 'rgb(240, 240, 240)'
-          const spaceRect = space.getBoundingClientRect()
+          const spaceBounds = space.getBoundingClientRect()
           return (
-            spaceRect.left < boundsX && spaceRect.right > boundsX &&
-            spaceRect.top < boundsY && spaceRect.bottom > boundsY &&
-            !space.classList.contains('active-block')
+            blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
+            blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom)
           )
         }).pop()
         return ghostBlock
@@ -234,14 +261,21 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
     const stopDroppingOnCollision = () => {
       [].slice.call(pieceRef.current.children).forEach((block) => {
         const blockBounds = block.getBoundingClientRect()
-        const blockBoundsX = (blockBounds.right + blockBounds.left) / 2
-        const blockBoundsY = (blockBounds.bottom + blockBounds.top) / 2
+        const blockBoundsX = []
+        const blockBoundsY = []
+        for (let i = blockBounds.left; i <= blockBounds.right; i++){
+          blockBoundsX.push(i)
+        }
+    
+        for (let i = blockBounds.top; i <= blockBounds.bottom; i++){
+          blockBoundsY.push(i)
+        }
         
         const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
-          const spaceRect = space.getBoundingClientRect()
+          const spaceBounds = space.getBoundingClientRect()
           return (
-            spaceRect.left < blockBoundsX && spaceRect.right > blockBoundsX &&
-            spaceRect.top < blockBoundsY && spaceRect.bottom > blockBoundsY &&
+            blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
+            blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom) &&
             !space.classList.contains('active-block')
             )
           }).pop()
@@ -252,7 +286,12 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
       clearInterval(refreshCycle)
       db.inputLock = true
       const numOfLines = destroyLines(mainGridRef)
-      db.destroyedLines = numOfLines
+      incrementScore(scoreChart[numOfLines])
+      db.destroyedLines += numOfLines
+      setLevel(Math.floor(db.destroyedLines / 10))
+      if (levelChart[level]) {
+        setDropSpeed(levelChart[level])
+      }
       setPieceBlocks(null)
     }
 
@@ -284,6 +323,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
       if (inputs.includes(' ')) {
         rotation()
         db.redrawGhostPiece = true
+        drawPiece()
       }
       
       if (inputs.includes("ArrowLeft") && movingLeft()) {
@@ -329,17 +369,27 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, setSco
       }, 30 * frame)
     }
 
-    if (!movingDown()) {
+    if (!movingDown(0)) {
       setGameActive(false)
     }
     
     return () => {
       clearInterval(refreshCycle)
-      clearInterval(db.interval)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
     }
-  }, [blockSize, dropSpeed, pieceBlocks, db, gameActive, gridSpaces, frame])
+  }, [
+    blockSize,
+    dropSpeed,
+    pieceBlocks,
+    db,
+    gameActive,
+    gridSpaces,
+    frame,
+    incrementScore,
+    level,
+    setLevel
+  ])
 
 
   const renderedGridSpaces = () => {

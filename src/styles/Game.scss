@@ -11,14 +11,16 @@
     height: 100%;
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    gap: 3rem;
 
     .game-main-grid {
       height: 100%;
       width: 100%;
       border: 2px solid black;
       border-radius: 8px;
-      background-color: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.3);
+      filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
+      -webkit-filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
     }
   }
 }

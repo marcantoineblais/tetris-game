@@ -8,8 +8,8 @@ const Game = () => {
   const [db, setDB] = useState(null)
   const [blockSize, setBlockSize] = useState(null)
   const [nextPiece, setNextPiece] = useState(null)
-  const [score, setScore] = useState(null)
-  const [level, setLevel] = useState(null)
+  const [score, setScore] = useState(0)
+  const [level, setLevel] = useState(0)
   const containerRef = useRef()
 
   useEffect(() => {
@@ -23,6 +23,10 @@ const Game = () => {
     database.dropRate = 1
     setDB(database)
 }, [])
+
+  const incrementScore = (points) => {
+    setScore(score + points)
+  }
 
   return (
     <div className="game">
@@ -40,7 +44,8 @@ const Game = () => {
             blockSize={blockSize}
             setBlockSize={setBlockSize}
             setNextPiece={setNextPiece}
-            setScore={setScore}
+            incrementScore={incrementScore}
+            level = {level}
             setLevel={setLevel}
           />
         </div>

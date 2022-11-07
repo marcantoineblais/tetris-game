@@ -1,42 +1,58 @@
-.next-grid {
-  position: relative;
-  border: 2px black solid;
-  border-radius: 8px;
 
-  .next-piece {
-    position: absolute;
-    border: 1px solid gold;
+.next-grid-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .grid {
+    position: relative;
+    border: 2px black solid;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
+    -webkit-filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
+
+    .next-piece {
+      position: absolute;
+      border: 1px solid rgb(240, 240, 240)
+    }
+
+    .pink {
+      background-color: pink;
+    }
+
+    .orange {
+      background-color: orange;
+    }
+
+    .purple {
+      background-color: purple;
+    }
+
+    .blue {
+      background-color: blue;
+    }
+
+    .green {
+      background-color: green;
+    }
+
+    .red {
+      background-color: red;
+    }
+
+    .grey {
+      background-color: grey;
+    }
+
+    .black {
+      background-color: black;
+    }
   }
 
-  .pink {
-    background-color: pink;
-  }
-
-  .orange {
-    background-color: orange;
-  }
-
-  .purple {
-    background-color: purple;
-  }
-
-  .blue {
-    background-color: blue;
-  }
-
-  .green {
-    background-color: green;
-  }
-
-  .red {
-    background-color: red;
-  }
-
-  .grey {
-    background-color: grey;
-  }
-
-  .black {
-    background-color: black;
+  h2 {
+    font-size: 2rem;
+    color:rgb(240, 240, 240);
+    margin: 0;
   }
 }
