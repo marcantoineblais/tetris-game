@@ -36,10 +36,14 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         mainGrid.style.height = (dimension * 22 + 2).toString() + 'px'
       }
       
-      const mainGridSpaces = [].slice.call(mainGridRef.current.children).filter(space => space.classList.contains('grid-space'))
-      mainGridSpaces.forEach(el => {
-        el.style.width = dimension.toString() + 'px'
-        el.style.height = dimension.toString() + 'px'
+      const mainGridSpaces = [].slice.call(mainGridRef.current.children).filter(space => space.classList.contains('empty-block'))
+      mainGridSpaces.forEach(block => {
+        block.style.width = dimension.toString() + 'px'
+        block.style.height = dimension.toString() + 'px';
+          [].slice.call(block.children).forEach(el => {
+          el.style.width = dimension.toString() + 'px'
+          el.style.height = dimension.toString() + 'px'
+        })
       })
     
       setBlockSize(dimension)
@@ -96,7 +100,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
       pieceRef.current.style.top = top
       pieceRef.current.style.left = left
-      pieceRef.current.style.transform = 'rotateZ(0deg) rotateX(-5deg) rotateY(-10deg)'
+      pieceRef.current.style.transform = 'rotateZ(0deg)'
       db.coord = { x: coordX, y: coordY }
       db.initY = coordY
       setPieceBlocks(blocks)
@@ -241,8 +245,10 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         }
 
         const ghostBlock = gridSpaces.filter((space) => {
-          space.classList.remove('ghost-piece')
-          space.style.borderColor = 'rgb(240, 240, 240)'
+          [].slice.call(space).forEach(face => {
+            face.children.classList.remove('ghost-piece')
+            face.style.borderColor = 'rgb(240, 240, 240)'
+          })
           const spaceBounds = space.getBoundingClientRect()
           return (
             blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
@@ -258,8 +264,10 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       }
 
       ghostBlockSpaces.forEach(space => {
-        space.classList.add('ghost-piece')
-        space.style.borderColor = db.piece.color
+        [].slice.call(space).forEach(face => {
+          face.classList.add('ghost-piece')
+          face.style.borderColor = db.piece.color
+        })
       })
       
       db.redrawGhostPiece = false
@@ -403,7 +411,16 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     const gridSpaces = []
     for (let y = 0; y < 22; y += 1) {
       for (let x = 0; x < 12; x += 1) {
-        gridSpaces.push(<div id={`${x}, ${y}`} className="grid-space" key={`${x}, ${y}`}></div>)
+        gridSpaces.push(
+          <div className="empty-block" key={`${x}, ${y}`}>
+            <div className='front grid-space'></div>
+            <div className='back grid-space'></div>
+            <div className='left grid-space'></div>
+            <div className='right grid-space'></div>
+            <div className='top grid-space'></div>
+            <div className='bottom grid-space'></div>
+          </div>
+        )
       }
     }
   

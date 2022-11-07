@@ -16,9 +16,7 @@
     .game-main-grid {
       height: 100%;
       width: 100%;
-      border: 2px solid black;
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.1);
       filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
       -webkit-filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
     }
@@ -34,7 +32,6 @@
 
   .block {
     position: absolute;
-    transform: translateZ(-25px);
     transform-style: preserve-3d;
     width: 0;
     height: 0;
