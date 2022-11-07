@@ -32,8 +32,8 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         mainGrid.style.height = (dimension * 22).toString() + 'px'
       } else {
         dimension = Math.floor(mainGrid.clientHeight / 220) * 10
-        mainGrid.style.width = (dimension * 12).toString() + 'px'
-        mainGrid.style.height = (dimension * 22).toString() + 'px'
+        mainGrid.style.width = (dimension * 12 + 2).toString() + 'px'
+        mainGrid.style.height = (dimension * 22 + 2).toString() + 'px'
       }
       
       const mainGridSpaces = [].slice.call(mainGridRef.current.children).filter(space => space.classList.contains('grid-space'))
@@ -64,8 +64,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
     // RENDER NEW PIECE
     const renderPiece = (piece) => {
-      const blocks = []
-      piece.coordinates.forEach((coord, i) => {
+      const blocks = piece.coordinates.map((coord, i) => {
         const coordX = coord.x * blockSize
         const coordY = coord.y * blockSize
         
@@ -73,22 +72,30 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           width: blockSize.toString() + 'px',
           height: blockSize.toString() + 'px',
           left: coordX.toString() + 'px',
-          top: coordY.toString() + 'px'
+          top: coordY.toString() + 'px',
+          border: '2px solid rgb(240, 240, 240)'
         }
-        blocks.push(<div className={'active-block ' + piece.color} style={style} key={i}></div>)
+        return (
+          <div className="block" key={i}>
+            <div className={'front active-block piece ' + piece.color} style={style}></div>
+            <div className={'back piece ' + piece.color} style={style}></div>
+            <div className={'left piece ' + piece.color} style={style}></div>
+            <div className={'right piece ' + piece.color} style={style}></div>
+            <div className={'top piece ' + piece.color} style={style}></div>
+            <div className={'bottom piece ' + piece.color} style={style}></div>
+          </div>
+        )
       })
       
       const coordX = piece.center.x * blockSize
-      const coordY = piece.center.y * blockSize
+      const coordY = piece.center.y * blockSize 
       const left = coordX.toString() + 'px'
       const top = coordY.toString() + 'px'
-      const shadow = `${blockSize}px ${blockSize / 5}px ${db.piece.color}` 
       
 
       pieceRef.current.style.top = top
       pieceRef.current.style.left = left
-      pieceRef.current.style.transform = ''
-      pieceRef.current.style.boxShadow = shadow
+      pieceRef.current.style.transform = 'rotateZ(0deg) rotateX(-5deg) rotateY(-10deg)'
       db.coord = { x: coordX, y: coordY }
       db.initY = coordY
       setPieceBlocks(blocks)
@@ -219,7 +226,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         offsetY += blockSize
       }
 
-      const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.getBoundingClientRect())
+      const blockBounds = [].slice.call(pieceRef.current.children).filter(el => el.classList.contains('active-block')).map(block => block.getBoundingClientRect())
       const ghostBlockSpaces = blockBounds.map(bounds => {
         
         const blockBoundsX = []
@@ -259,7 +266,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
     const stopDroppingOnCollision = () => {
-      [].slice.call(pieceRef.current.children).forEach((block) => {
+      [].slice.call(pieceRef.current.children).filter(el => el.classList.contains('active-piece')).forEach((block) => {
         const blockBounds = block.getBoundingClientRect()
         const blockBoundsX = []
         const blockBoundsY = []
@@ -323,7 +330,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       if (inputs.includes(' ')) {
         rotation()
         db.redrawGhostPiece = true
-        drawPiece()
       }
       
       if (inputs.includes("ArrowLeft") && movingLeft()) {
@@ -406,7 +412,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
   return (
     <div ref={mainGridRef} className="main-grid" onClick={() => setGameActive(true)}>
       {renderedGridSpaces()}
-      <div ref={pieceRef} style={{ position: 'absolute'}}>
+      <div ref={pieceRef} className='blocks'>
         {pieceBlocks}
       </div>
     </div>

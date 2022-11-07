@@ -7,6 +7,7 @@ export const spawnPiece = () => {
       color: 'pink',
       center: { x: 6.5, y: 2.5 },
       geoCenter: { x: 2.5, y: 3 },
+      rotationOffset: {x: 0, y: 0},
       coordinates: [
         { x: -0.5, y: 0.5 },
         { x: -0.5, y: -0.5 },
@@ -19,6 +20,7 @@ export const spawnPiece = () => {
       color: 'orange',
       center: { x: 6.5, y: 2.5 },
       geoCenter: { x: 2, y: 3.5 },
+      rotationOffset: {x: 0.5, y: 0},
       coordinates: [
         { x: 0.5, y: -0.5},
         { x: -0.5, y: -0.5},
@@ -31,6 +33,7 @@ export const spawnPiece = () => {
       color: 'purple',
       center: { x: 6.5, y: 2.5 },
       geoCenter: { x: 3, y: 3.5 },
+      rotationOffset: {x: -0.5, y: 0},
       coordinates: [
         { x: -1.5, y: -0.5},
         { x: -0.5, y: -0.5},
@@ -43,6 +46,7 @@ export const spawnPiece = () => {
       color: 'blue',
       center: { x: 6.5, y: 1.5 },
       geoCenter: { x: 3, y: 2.5 },
+      rotationOffset: {x: -0.5, y: 0},
       coordinates: [
         { x: -0.5, y: 0.5 },
         { x: -0.5, y: -0.5 },
@@ -55,6 +59,7 @@ export const spawnPiece = () => {
       color: 'red',
       center: { x: 5.5, y: 1.5 },
       geoCenter: { x: 2, y: 2.5 },
+      rotationOffset: {x: 0.5, y: 0},
       coordinates: [
         { x: -0.5, y: 0.5 },
         { x: -0.5, y: -0.5 },
@@ -67,6 +72,7 @@ export const spawnPiece = () => {
       color: 'grey',
       center: { x: 7, y: 1 },
       geoCenter: { x: 2.5, y: 2.5 },
+      rotationOffset: {x: 0, y: 0},
       coordinates: [
         { x: 0, y: 0 },
         { x: -1, y: 0 },
@@ -79,6 +85,7 @@ export const spawnPiece = () => {
       color: 'black',
       center: { x: 6.5, y: 0.5 },
       geoCenter: { x: 2.5, y: 2.5 },
+      rotationOffset: {x: 0, y: 0},
       coordinates: [
         { x: -0.5, y: -0.5 }
       ]
@@ -88,6 +95,7 @@ export const spawnPiece = () => {
       color: 'green',
       center: { x: 6.5, y: 1.5 },
       geoCenter: { x: 2, y: 2.5 },
+      rotationOffset: {x: 0.5, y: 0},
       coordinates: [
         { x: -0.5, y: 0.5 },
         { x: -0.5, y: -0.5 },

@@ -3,7 +3,7 @@ const moveX = (mainGridRef, activePieceRef, blockSize) => {
 
   const checkForCollision = (blockBounds, mainGridRef) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-    if (blockBounds.left + blockSize < mainGridBounds.left|| blockBounds.right + blockSize > mainGridBounds.right) {
+    if (blockBounds.left + blockSize < mainGridBounds.left || blockBounds.right + blockSize > mainGridBounds.right) {
       return true
     }
 
@@ -34,7 +34,7 @@ const moveX = (mainGridRef, activePieceRef, blockSize) => {
 
   let collision
   [].slice.call(activePieceRef.current.children).forEach((block) => {
-    if (checkForCollision(block.getBoundingClientRect(), mainGridRef)) {
+    if (checkForCollision(block.children[0].getBoundingClientRect(), mainGridRef)) {
       collision = true
     }
   })

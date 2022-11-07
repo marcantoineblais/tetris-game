@@ -11,45 +11,13 @@
     background: transparent;
   }
 
-  .active-block,
+  .piece,
   .taken {
     border: 2px solid rgb(240, 240, 240)
   }
 
-  .active-block {
+  .piece {
     position: absolute;
-  }
-
-  .pink {
-    background-color: pink;
-  }
-  
-  .orange {
-    background-color: orange;
-  }
-  
-  .purple {
-    background-color: purple;
-  }
-  
-  .blue {
-    background-color: blue;
-  }
-  
-  .green {
-    background-color: green;
-  }
-  
-  .red {
-    background-color: red;
-  }
-  
-  .grey {
-    background-color: grey;
-  }
-  
-  .black {
-    background-color: black;
   }
 
   .ghost-piece {

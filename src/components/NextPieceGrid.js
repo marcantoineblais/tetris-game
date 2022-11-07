@@ -21,6 +21,24 @@ const NextPieceGrid = ({ piece, blockSize }) => {
       return
     }
 
+    const offsetX = piece.rotationOffset.x * blockSize
+    const offsetY = piece.rotationOffset.y * blockSize
+    nextPieceRef.current.style.transformOrigin = `${offsetX}px ${offsetY}px`
+    const rotation = setInterval(() => {
+      const degrees = (parseInt(nextPieceRef.current.style.transform.slice(8, 11)) + 1) % 360 || 0
+      nextPieceRef.current.style.transform = 'rotateY(' + degrees.toString() + 'deg) rotateX(5deg)'
+    }, 50)
+    
+    return () => {
+      clearInterval(rotation)
+    }
+  }, [piece, blockSize])
+
+  useEffect(() => {
+    if (!piece) {
+      return
+    }
+
     const renderPiece = () => {
       const blocks = piece.coordinates.map((coord, i) => {
         const coordX = coord.x * blockSize
@@ -32,7 +50,16 @@ const NextPieceGrid = ({ piece, blockSize }) => {
           left: coordX.toString() + 'px',
           top: coordY.toString() + 'px'
         }
-       return <div className={'next-piece ' + piece.color} style={style} key={i}></div>
+        return (
+          <div className='block' key={i}>
+            <div className={'front next-piece ' + piece.color} style={style}></div>
+            <div className={'back next-piece ' + piece.color} style={style}></div>
+            <div className={'left next-piece ' + piece.color} style={style}></div>
+            <div className={'right next-piece ' + piece.color} style={style}></div>
+            <div className={'top next-piece ' + piece.color} style={style}></div>
+            <div className={'bottom next-piece ' + piece.color} style={style}></div>
+          </div>
+        )
       })
             
       setNextPiece(blocks)
@@ -50,7 +77,7 @@ const NextPieceGrid = ({ piece, blockSize }) => {
     <div className="next-grid-content">
       <h2>COMING NEXT</h2>
       <div ref={containerRef} className="grid">
-        <div ref={nextPieceRef} style={{ position: 'absolute' }}>{nextPiece}</div>
+        <div ref={nextPieceRef} className="blocks" style={{ position: 'absolute' }}>{nextPiece}</div>
       </div>
     </div>
   )

@@ -23,4 +23,70 @@
       -webkit-filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
     }
   }
+
+  .blocks {
+    width: 0;
+    height: 0;
+    position: absolute;
+    transform-style: preserve-3d;
+    z-index: 1;
+  }
+
+  .block {
+    position: absolute;
+    transform-style: preserve-3d;
+    width: 0;
+    height: 0;
+  }
+
+  .front {
+    transform: translateZ(25px);
+  }
+  .back {
+    transform: rotateY(-180deg) translateZ(25px);
+  }
+  .left {
+    transform: rotateY(-90deg) translateZ(25px);
+  }
+  .right {
+    transform: rotateY(90deg) translateZ(25px);
+  }
+  .top {
+    transform: rotateX(90deg) translateZ(25px);
+  }
+  .bottom {
+    transform: rotateX(-90deg) translateZ(25px);
+  }
+
+  .pink {
+    background-color: pink;
+  }
+
+  .orange {
+    background-color: orange;
+  }
+
+  .purple {
+    background-color: purple;
+  }
+
+  .blue {
+    background-color: blue;
+  }
+
+  .green {
+    background-color: green;
+  }
+
+  .red {
+    background-color: red;
+  }
+
+  .grey {
+    background-color: grey;
+  }
+
+  .black {
+    background-color: black;
+  }
 }

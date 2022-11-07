@@ -33,7 +33,7 @@ const moveDown = (mainGridRef, pieceRef, rate) => {
 
   let collision
   [].slice.call(pieceRef.current.children).forEach((block) => {
-    if (checkForCollision(block.getBoundingClientRect())) {
+    if (checkForCollision(block.children[0].getBoundingClientRect())) {
       collision = true
     }
   })
