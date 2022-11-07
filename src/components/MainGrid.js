@@ -75,6 +75,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           top: coordY.toString() + 'px',
           border: '2px solid rgb(240, 240, 240)'
         }
+
         return (
           <div className="block" key={i}>
             <div className={'front active-block piece ' + piece.color} style={style}></div>
@@ -226,7 +227,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         offsetY += blockSize
       }
 
-      const blockBounds = [].slice.call(pieceRef.current.children).filter(el => el.classList.contains('active-block')).map(block => block.getBoundingClientRect())
+      const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.children[0].getBoundingClientRect())
       const ghostBlockSpaces = blockBounds.map(bounds => {
         
         const blockBoundsX = []
@@ -266,8 +267,8 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
     const stopDroppingOnCollision = () => {
-      [].slice.call(pieceRef.current.children).filter(el => el.classList.contains('active-piece')).forEach((block) => {
-        const blockBounds = block.getBoundingClientRect()
+      [].slice.call(pieceRef.current.children).forEach((block) => {
+        const blockBounds = block.children[0].getBoundingClientRect()
         const blockBoundsX = []
         const blockBoundsY = []
         for (let i = blockBounds.left; i <= blockBounds.right; i++){

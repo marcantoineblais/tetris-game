@@ -9,6 +9,7 @@
 
   .grid-space {
     background: transparent;
+    transform: rotateX(-5deg) rotateY(-10deg);
   }
 
   .piece,
@@ -18,6 +19,10 @@
 
   .piece {
     position: absolute;
+  }
+
+  .taken {
+    z-index: 10;
   }
 
   .ghost-piece {

@@ -34,6 +34,7 @@
 
   .block {
     position: absolute;
+    transform: translateZ(-25px);
     transform-style: preserve-3d;
     width: 0;
     height: 0;

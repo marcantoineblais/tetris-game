@@ -32,9 +32,9 @@ const rotate = (mainGridRef, pieceRef, offset = 0) => {
   const beforeRotation = piece.style.transform
   const currentValue = piece.style.transform.split("(")
   const zDegrees = (parseInt(currentValue[1]) + 90) % 360
-  const yDegrees = -(parseInt(currentValue[3]))
-  const xDegrees = (parseInt(currentValue[2]))
-  piece.style.transform = `rotateZ(${zDegrees}deg) rotateY(${yDegrees}deg) rotateX(${xDegrees}deg)`
+  const xDegrees = (parseInt(currentValue[3]))
+  const yDegrees = -(parseInt(currentValue[2]))
+  piece.style.transform = `rotateZ(${zDegrees}deg) rotateX(${xDegrees}deg) rotateY(${yDegrees}deg)`
 
   let collision
   [].slice.call(piece.children).forEach((block) => {
