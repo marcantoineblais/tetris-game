@@ -16,7 +16,9 @@
     .game-main-grid {
       height: 100%;
       width: 100%;
-      background: rgba(0, 0, 0, 0.1);
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(0, 0, 0, 1);
+      border-radius: 8px;
       filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
       -webkit-filter: drop-shadow(2em 2em 4px rgba(0, 0, 0, 0.5));
     }
@@ -31,10 +33,28 @@
   }
 
   .block {
+    border-color: rgba(0, 0, 0, 0.1);
     position: absolute;
     transform-style: preserve-3d;
-    width: 0;
-    height: 0;
+  }
+
+  .piece {
+    visibility: hidden;
+    border: 2px solid;
+    border-radius: 8px;
+  }
+
+  .face {
+    visibility: visible;
+    position: absolute;
+    width: inherit;
+    height: inherit;
+    border: inherit;
+    border-color: inherit;
+    border-radius: 8px;
+    background: inherit;
+    background-color: inherit;
+    opacity: inherit;
   }
 
   .front {

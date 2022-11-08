@@ -11,7 +11,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
   const [pieceBlocks, setPieceBlocks] = useState(null)
   const [gameActive, setGameActive] = useState(false)
-  const [gridSpaces, setGridSpaces] = useState(null)
   const frame = 1000 / 60
   
   const mainGridRef = useRef()
@@ -36,18 +35,13 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         mainGrid.style.height = (dimension * 22 + 2).toString() + 'px'
       }
       
-      const mainGridSpaces = [].slice.call(mainGridRef.current.children).filter(space => space.classList.contains('empty-block'))
+      const mainGridSpaces = [].slice.call(mainGridRef.current.children).filter(space => space.classList.contains('grid-space'))
       mainGridSpaces.forEach(block => {
         block.style.width = dimension.toString() + 'px'
         block.style.height = dimension.toString() + 'px';
-          [].slice.call(block.children).forEach(el => {
-          el.style.width = dimension.toString() + 'px'
-          el.style.height = dimension.toString() + 'px'
-        })
       })
     
       setBlockSize(dimension)
-      setGridSpaces(mainGridSpaces)
       container.current.style.width = 'fit-content'
       container.current.style.height = 'fit-content'
     }
@@ -77,21 +71,17 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           height: blockSize.toString() + 'px',
           left: coordX.toString() + 'px',
           top: coordY.toString() + 'px',
-        }
-
-        const faceStyle = {
-          width: blockSize.toString() + 'px',
-          height: blockSize.toString() + 'px'
+          borderColor: 'rgba(0, 0, 0, 0.1)'
         }
 
         return (
-          <div className="block" style={blockStyle} key={i}>
-            <div className={'front active-block piece ' + piece.color} style={faceStyle}></div> 
-            <div className={'back piece ' + piece.color} style={faceStyle}></div>
-            <div className={'left piece ' + piece.color} style={faceStyle}></div>
-            <div className={'right piece ' + piece.color} style={faceStyle}></div>
-            <div className={'top piece ' + piece.color} style={faceStyle}></div>
-            <div className={'bottom piece ' + piece.color} style={faceStyle}></div>
+          <div className={"block piece " + piece.color} style={blockStyle} key={i}>
+            <div className='front face'></div> 
+            <div className='back face'></div>
+            <div className='left face'></div>
+            <div className='right face'></div>
+            <div className='top face'></div>
+            <div className='bottom face'></div>
           </div>
         )
       })
@@ -206,8 +196,8 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       return moveX(mainGridRef, pieceRef, blockSize)
     }
 
-    const movingDown = (rate) => {
-      return moveDown(mainGridRef, pieceRef, rate)
+    const movingDown = (rate, offsetX = 0) => {
+      return moveDown(mainGridRef, pieceRef, rate, offsetX)
     }
     
     const rotation = () => {
@@ -248,11 +238,10 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           blockBoundsY.push(i + offsetY)
         }
 
-        const ghostBlock = gridSpaces.filter((space) => {
-          [].slice.call(space.children).forEach(face => {
-            face.classList.remove('ghost-piece')
-            face.style.border = '2px solid rgba(0, 0, 0, 0.1)'
-          })
+        const ghostBlock = [].slice.call(mainGridRef.current.children).filter((space) => {
+          space.classList.add('grid-space')
+          space.classList.remove('ghost-piece')
+          space.style.border = ''
           const spaceBounds = space.getBoundingClientRect()
           return (
             blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
@@ -268,11 +257,9 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       }
 
       ghostBlockSpaces.forEach(space => {
-        [].slice.call(space.children).forEach(face => {
-          face.classList.add('ghost-piece')
-          face.style.borderColor = db.piece.color
-        })
-
+        space.classList.remove('grid-space')
+        space.classList.add('ghost-piece')
+        space.style.border = `2px solid ${db.piece.color}`
       })
       
       db.redrawGhostPiece = false
@@ -302,14 +289,13 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           }
         ).pop();
         
-        takenSpace.classList.add('taken');
-        [].slice.call(takenSpace.children).forEach(space => {
-          space.classList.add(db.piece.color)
-        })
+        takenSpace.classList.add('taken', db.piece.color);
       })
       
       clearInterval(refreshCycle)
       db.inputLock = true
+      delete db.fallBufferTimeout
+
       const numOfLines = destroyLines(mainGridRef)
       incrementScore(scoreChart[numOfLines])
       db.destroyedLines += numOfLines
@@ -333,7 +319,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         } else {
           clearTimeout(db.fallBufferTimeout)
           stopDroppingOnCollision()
-          delete db.fallBufferTimeout
         }
       }, 6 * frame)
     }
@@ -344,22 +329,21 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         return
       }
 
-
-
       const inputs = db.shortPush.concat(db.longPush)
       if (inputs.includes(' ')) {
         rotation()
         db.redrawGhostPiece = true
       }
       
+      let offsetX = 0
       if (inputs.includes("ArrowLeft") && movingLeft()) {
         db.coord.x -= blockSize
         db.redrawGhostPiece = true
-        drawPiece()
+        offsetX = -blockSize
       } else if (inputs.includes("ArrowRight") && movingRight()) {
         db.coord.x += blockSize
         db.redrawGhostPiece = true
-        drawPiece()
+        offsetX = blockSize
       }
       
       let rate
@@ -368,9 +352,9 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       } else {
         rate = blockSize / (dropSpeed / frame)
       }
-      if (movingDown(rate)) {
+      if (movingDown(rate, offsetX)) {
+        delete db.fallBufferTimeout
         db.coord.y += rate
-        drawPiece()
       } else {
         beforeCollision(rate)
       }
@@ -380,15 +364,16 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
     const refreshCycle = setInterval(() => {
       if (pieceBlocks && db.piece) {
+        executeInputs()
         drawPiece()
         if (db.redrawGhostPiece) {
           ghostPiece()
         }
-        executeInputs()
       }
     }, frame)
     
     if (gameActive && pieceBlocks) {
+      drawPiece()
       ghostPiece()
       setTimeout(() => {
         db.inputLock = false
@@ -410,7 +395,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     pieceBlocks,
     db,
     gameActive,
-    gridSpaces,
     frame,
     incrementScore,
     level,
@@ -423,13 +407,13 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     for (let y = 0; y < 22; y += 1) {
       for (let x = 0; x < 12; x += 1) {
         gridSpaces.push(
-          <div className="empty-block" key={`${x}, ${y}`}>
-            <div className='front grid-space'></div>
-            <div className='back grid-space'></div>
-            <div className='left grid-space'></div>
-            <div className='right grid-space'></div>
-            <div className='top grid-space'></div>
-            <div className='bottom grid-space'></div>
+          <div className="grid-space" key={`${x}, ${y}`}>
+            <div className='front face'></div>
+            <div className='back face'></div>
+            <div className='left face'></div>
+            <div className='right face'></div>
+            <div className='top face'></div>
+            <div className='bottom face'></div>
           </div>
         )
       }
@@ -441,7 +425,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
   return (
     <div ref={mainGridRef} className="main-grid" onClick={() => setGameActive(true)}>
       {renderedGridSpaces()}
-      <div ref={pieceRef} className='blocks'>
+      <div ref={pieceRef} className='blocks active-block'>
         {pieceBlocks}
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { dblClick } from "@testing-library/user-event/dist/click"
 import React, { useEffect, useRef, useState } from "react"
 
 const NextPieceGrid = ({ piece, blockSize }) => {
@@ -48,22 +49,18 @@ const NextPieceGrid = ({ piece, blockSize }) => {
           width: (blockSize).toString() + 'px',
           height: (blockSize).toString() + 'px',
           left: coordX.toString() + 'px',
-          top: coordY.toString() + 'px'
-        }
-
-        const faceStyle = {
-          width: (blockSize).toString() + 'px',
-          height: (blockSize).toString() + 'px'
+          top: coordY.toString() + 'px',
+          borderColor: 'rgba(0, 0, 0, 0.1)'
         }
 
         return (
-          <div className='block' style={blockStyle} key={i}>
-            <div className={'front next-piece ' + piece.color} style={faceStyle}></div>
-            <div className={'back next-piece ' + piece.color} style={faceStyle}></div>
-            <div className={'left next-piece ' + piece.color} style={faceStyle}></div>
-            <div className={'right next-piece ' + piece.color} style={faceStyle}></div>
-            <div className={'top next-piece ' + piece.color} style={faceStyle}></div>
-            <div className={'bottom next-piece ' + piece.color} style={faceStyle}></div>
+          <div className={'block piece ' + piece.color} style={blockStyle} key={i}>
+            <div className='front face'></div>
+            <div className='back face'></div>
+            <div className='left face'></div>
+            <div className='right face'></div>
+            <div className='top face'></div>
+            <div className='bottom face'></div>
           </div>
         )
       })

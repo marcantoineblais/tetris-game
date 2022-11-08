@@ -10,29 +10,20 @@
   perspective-origin: top center;
   transform-style: preserve-3d;
 
-  .empty-block {
+  .grid-space {
     position: relative;
     transform-style: preserve-3d;
   }
 
-  .grid-space {
-    position: absolute;
-    transform-style: preserve-3d;
+  .taken {
+    visibility: hidden;
     border: 2px solid rgba(0, 0, 0, 0.1);
-  }
-
-  .piece {
-    border: 2px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-  }
-
-  .piece {
-    position: absolute;
   }
 
   .ghost-piece {
-    border: 2px solid;
+    visibility: hidden;
+    position: relative;
     background: linear-gradient(90deg, silver, silver, silver, grey);
-    opacity: 0.1;
+    opacity: 0.3;
   }
 }

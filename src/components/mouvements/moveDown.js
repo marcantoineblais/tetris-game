@@ -1,5 +1,5 @@
 
-const moveDown = (mainGridRef, pieceRef, rate) => {
+const moveDown = (mainGridRef, pieceRef, rate, offsetX) => {
 
   const checkForCollision = (blockBounds) => {
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
@@ -10,7 +10,7 @@ const moveDown = (mainGridRef, pieceRef, rate) => {
     const blockBoundsX = []
     const blockBoundsY = []
     for (let i = blockBounds.left; i <= blockBounds.right; i++){
-      blockBoundsX.push(i)
+      blockBoundsX.push(i + offsetX)
     }
 
     for (let i = blockBounds.top; i <= blockBounds.bottom; i++){
