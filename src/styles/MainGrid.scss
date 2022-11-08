@@ -7,7 +7,7 @@
   flex-wrap: wrap;
   align-content: flex-start;
   perspective: 2000px;
-  perspective-origin: top right;
+  perspective-origin: top center;
   transform-style: preserve-3d;
 
   .empty-block {
@@ -19,21 +19,16 @@
     position: absolute;
     transform-style: preserve-3d;
     border: 2px solid rgba(0, 0, 0, 0.1);
-    background: linear-gradient(rgba(0, 0, 0, 0.3));
   }
 
   .piece,
   .taken {
-    border: 2px solid rgb(240, 240, 240);
+    border: 2px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
   }
 
   .piece {
     position: absolute;
-  }
-
-  .taken {
-    z-index: 10;
   }
 
   .ghost-piece {

@@ -77,7 +77,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           height: blockSize.toString() + 'px',
           left: coordX.toString() + 'px',
           top: coordY.toString() + 'px',
-          border: '2px solid rgb(240, 240, 240)'
         }
 
         return (
@@ -195,11 +194,11 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
     // CHECKS FOR MOVEMENT AND COLLISIONS
     const movingLeft = () => {
-      return moveX(mainGridRef, pieceRef, -blockSize)
+      return moveX(mainGridRef, pieceRef, -1)
     }
 
     const movingRight = () => {
-      return moveX(mainGridRef, pieceRef, blockSize)
+      return moveX(mainGridRef, pieceRef, 1)
     }
 
     const movingDown = (rate) => {
@@ -227,7 +226,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         return
       }
       
-      while (movingDown(offsetY + blockSize)) {
+      while (movingDown(offsetY)) {
         offsetY += blockSize
       }
 
@@ -245,11 +244,11 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         }
 
         const ghostBlock = gridSpaces.filter((space) => {
-          [].slice.call(space).forEach(face => {
-            face.children.classList.remove('ghost-piece')
-            face.style.borderColor = 'rgb(240, 240, 240)'
+          [].slice.call(space.children).forEach(face => {
+            face.classList.remove('ghost-piece')
+            face.style.border = '2px solid rgba(0, 0, 0, 0.1)'
           })
-          const spaceBounds = space.getBoundingClientRect()
+          const spaceBounds = space.children[0].getBoundingClientRect()
           return (
             blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
             blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom)
@@ -264,10 +263,11 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       }
 
       ghostBlockSpaces.forEach(space => {
-        [].slice.call(space).forEach(face => {
+        [].slice.call(space.children).forEach(face => {
           face.classList.add('ghost-piece')
           face.style.borderColor = db.piece.color
         })
+
       })
       
       db.redrawGhostPiece = false
@@ -288,15 +288,18 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         }
         
         const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
-          const spaceBounds = space.getBoundingClientRect()
+          const spaceBounds = space.children[0].getBoundingClientRect()
           return (
             blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
             blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom) &&
             !space.classList.contains('active-block')
             )
-          }).pop()
+          }
+        ).pop();
         
-        takenSpace.classList.add('taken', db.piece.color)
+        [].slice.call(takenSpace.children).forEach(space => {
+          space.classList.add('taken', db.piece.color)
+        })
       })
       
       clearInterval(refreshCycle)
@@ -335,6 +338,8 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         return
       }
 
+
+
       const inputs = db.shortPush.concat(db.longPush)
       if (inputs.includes(' ')) {
         rotation()
@@ -353,7 +358,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       
       let rate
       if (inputs.includes('ArrowDown')) {
-        rate = blockSize - ((db.coord.y + db.initY) % blockSize) 
+        rate = blockSize - ((db.coord.y + db.initY) % blockSize) + (mainGridRef.current.clientHeight / db.coord.y)
       } else {
         rate = blockSize / (dropSpeed / frame)
       }
