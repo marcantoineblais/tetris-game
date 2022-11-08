@@ -72,21 +72,26 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         const coordX = coord.x * blockSize
         const coordY = coord.y * blockSize
         
-        const style = {
+        const blockStyle = {
           width: blockSize.toString() + 'px',
           height: blockSize.toString() + 'px',
           left: coordX.toString() + 'px',
           top: coordY.toString() + 'px',
         }
 
+        const faceStyle = {
+          width: blockSize.toString() + 'px',
+          height: blockSize.toString() + 'px'
+        }
+
         return (
-          <div className="block" key={i}>
-            <div className={'front active-block piece ' + piece.color} style={style}></div>
-            <div className={'back piece ' + piece.color} style={style}></div>
-            <div className={'left piece ' + piece.color} style={style}></div>
-            <div className={'right piece ' + piece.color} style={style}></div>
-            <div className={'top piece ' + piece.color} style={style}></div>
-            <div className={'bottom piece ' + piece.color} style={style}></div>
+          <div className="block" style={blockStyle} key={i}>
+            <div className={'front active-block piece ' + piece.color} style={faceStyle}></div> 
+            <div className={'back piece ' + piece.color} style={faceStyle}></div>
+            <div className={'left piece ' + piece.color} style={faceStyle}></div>
+            <div className={'right piece ' + piece.color} style={faceStyle}></div>
+            <div className={'top piece ' + piece.color} style={faceStyle}></div>
+            <div className={'bottom piece ' + piece.color} style={faceStyle}></div>
           </div>
         )
       })
@@ -194,11 +199,11 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
     // CHECKS FOR MOVEMENT AND COLLISIONS
     const movingLeft = () => {
-      return moveX(mainGridRef, pieceRef, -1)
+      return moveX(mainGridRef, pieceRef, -blockSize)
     }
 
     const movingRight = () => {
-      return moveX(mainGridRef, pieceRef, 1)
+      return moveX(mainGridRef, pieceRef, blockSize)
     }
 
     const movingDown = (rate) => {
@@ -220,17 +225,17 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     }
 
     const ghostPiece = () => {
-      let offsetY = blockSize
+      let offsetY = blockSize - ((db.coord.y + db.initY) % blockSize)
       if (!movingDown(offsetY)) {
         db.redrawGhostPiece = false
         return
       }
       
-      while (movingDown(offsetY)) {
+      while (movingDown(offsetY + blockSize)) {
         offsetY += blockSize
       }
 
-      const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.children[0].getBoundingClientRect())
+      const blockBounds = [].slice.call(pieceRef.current.children).map(block => block.getBoundingClientRect())
       const ghostBlockSpaces = blockBounds.map(bounds => {
         
         const blockBoundsX = []
@@ -248,7 +253,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
             face.classList.remove('ghost-piece')
             face.style.border = '2px solid rgba(0, 0, 0, 0.1)'
           })
-          const spaceBounds = space.children[0].getBoundingClientRect()
+          const spaceBounds = space.getBoundingClientRect()
           return (
             blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
             blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom)
@@ -276,7 +281,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
     const stopDroppingOnCollision = () => {
       [].slice.call(pieceRef.current.children).forEach((block) => {
-        const blockBounds = block.children[0].getBoundingClientRect()
+        const blockBounds = block.getBoundingClientRect()
         const blockBoundsX = []
         const blockBoundsY = []
         for (let i = blockBounds.left; i <= blockBounds.right; i++){
@@ -288,7 +293,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         }
         
         const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
-          const spaceBounds = space.children[0].getBoundingClientRect()
+          const spaceBounds = space.getBoundingClientRect()
           return (
             blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
             blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom) &&
@@ -297,8 +302,9 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           }
         ).pop();
         
+        takenSpace.classList.add('taken');
         [].slice.call(takenSpace.children).forEach(space => {
-          space.classList.add('taken', db.piece.color)
+          space.classList.add(db.piece.color)
         })
       })
       
@@ -358,7 +364,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       
       let rate
       if (inputs.includes('ArrowDown')) {
-        rate = blockSize - ((db.coord.y + db.initY) % blockSize) + (mainGridRef.current.clientHeight / db.coord.y)
+        rate = blockSize - ((db.coord.y + db.initY) % blockSize)
       } else {
         rate = blockSize / (dropSpeed / frame)
       }

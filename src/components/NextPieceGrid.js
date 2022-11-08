@@ -44,20 +44,26 @@ const NextPieceGrid = ({ piece, blockSize }) => {
         const coordX = coord.x * blockSize
         const coordY = coord.y * blockSize
         
-        const style = {
+        const blockStyle = {
           width: (blockSize).toString() + 'px',
           height: (blockSize).toString() + 'px',
           left: coordX.toString() + 'px',
           top: coordY.toString() + 'px'
         }
+
+        const faceStyle = {
+          width: (blockSize).toString() + 'px',
+          height: (blockSize).toString() + 'px'
+        }
+
         return (
-          <div className='block' key={i}>
-            <div className={'front next-piece ' + piece.color} style={style}></div>
-            <div className={'back next-piece ' + piece.color} style={style}></div>
-            <div className={'left next-piece ' + piece.color} style={style}></div>
-            <div className={'right next-piece ' + piece.color} style={style}></div>
-            <div className={'top next-piece ' + piece.color} style={style}></div>
-            <div className={'bottom next-piece ' + piece.color} style={style}></div>
+          <div className='block' style={blockStyle} key={i}>
+            <div className={'front next-piece ' + piece.color} style={faceStyle}></div>
+            <div className={'back next-piece ' + piece.color} style={faceStyle}></div>
+            <div className={'left next-piece ' + piece.color} style={faceStyle}></div>
+            <div className={'right next-piece ' + piece.color} style={faceStyle}></div>
+            <div className={'top next-piece ' + piece.color} style={faceStyle}></div>
+            <div className={'bottom next-piece ' + piece.color} style={faceStyle}></div>
           </div>
         )
       })

@@ -13,7 +13,7 @@ const rotate = (mainGridRef, pieceRef, offset = 0) => {
     
     let collision
     [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
-      const spaceBounds = space.children[0].getBoundingClientRect()
+      const spaceBounds = space.getBoundingClientRect()
       if (
         (
           (spaceBounds.top <= blockBounds.top && spaceBounds.bottom - 3 > blockBounds.top) ||
@@ -36,7 +36,7 @@ const rotate = (mainGridRef, pieceRef, offset = 0) => {
 
   let collision
   [].slice.call(piece.children).forEach((block) => {
-    if (checkForCollision(block.children[0].getBoundingClientRect(), mainGridRef, offset)) {
+    if (checkForCollision(block.getBoundingClientRect(), mainGridRef, offset)) {
       collision = true
     }
   })
