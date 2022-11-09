@@ -1,31 +1,36 @@
-const rotate = (mainGridRef, pieceRef, offset = 0) => {
+const rotate = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, offset = 0) => {
 
   const piece = pieceRef.current
-  const checkForCollision = (blockBounds, mainGridRef, offSet) => {
-    const mainGridBounds = mainGridRef.current.getBoundingClientRect()
+  const checkForCollision = (blockBounds) => {
     if (
-      blockBounds.right + offSet <= mainGridBounds.left ||
-      blockBounds.left + offSet >= mainGridBounds.right ||
+      blockBounds.right + offset <= mainGridBounds.left ||
+      blockBounds.left + offset >= mainGridBounds.right ||
       blockBounds.bottom > mainGridBounds.bottom
     ) {
       return true
     }
     
+    const blockBoundsY = [blockBounds.top + 2, (blockBounds.top + blockBounds.bottom) / 2, blockBounds.bottom - 2]
+
     let collision
-    [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
-      const spaceBounds = space.getBoundingClientRect()
-      if (
-        (
-          (spaceBounds.top <= blockBounds.top && spaceBounds.bottom - 3 > blockBounds.top) ||
-          (spaceBounds.top < blockBounds.bottom && spaceBounds.bottom > blockBounds.bottom)
-        ) && (
-          spaceBounds.right === blockBounds.right + offSet || spaceBounds.left === blockBounds.left + offSet
-        )
-      ) {
-        collision = true
+    const spaces = mainGridSpaces
+    for (let i = 0; i < takenSpaces.length; i++) {
+      const index = takenSpaces[i]
+      const spaceBounds = spaces[index].getBoundingClientRect() 
+      if (spaceBounds.top > blockBounds.bottom) {
+        continue
       }
-    })
-    
+
+      if (spaceBounds.left !== blockBounds.left + offset) {
+        continue
+      }
+
+      if (blockBoundsY.some(n => n > spaceBounds.top && n <= spaceBounds.bottom)) {
+        collision = true
+        break
+      }
+    }
+
     return collision
   }
 
@@ -34,12 +39,14 @@ const rotate = (mainGridRef, pieceRef, offset = 0) => {
   const zDegrees = (parseInt(currentValue[1]) + 90) % 360
   piece.style.transform = `rotateZ(${zDegrees}deg)`
 
+  const blocks = pieceRef.current.children
   let collision
-  [].slice.call(piece.children).forEach((block) => {
-    if (checkForCollision(block.getBoundingClientRect(), mainGridRef, offset)) {
+  for (let i = 0; i < blocks.length; i++) {
+    if (checkForCollision(blocks[i].getBoundingClientRect())) {
       collision = true
+      break
     }
-  })
+  }
   
   if (collision) {
     piece.style.transform = beforeRotation

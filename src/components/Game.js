@@ -21,6 +21,8 @@ const Game = () => {
     database.buffer = {}
     database.destroyedLines = 0
     database.dropRate = 1
+    database.ghostBlocks = []
+    database.takenSpaces = []
     setDB(database)
 }, [])
 
