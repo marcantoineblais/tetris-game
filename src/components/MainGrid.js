@@ -269,11 +269,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     const stopDroppingOnCollision = () => {
       [].slice.call(pieceRef.current.children).forEach((block) => {
         const blockBounds = block.getBoundingClientRect()
-        const blockBoundsX = []
         const blockBoundsY = []
-        for (let i = blockBounds.left; i <= blockBounds.right; i++){
-          blockBoundsX.push(i)
-        }
     
         for (let i = blockBounds.top; i <= blockBounds.bottom; i++){
           blockBoundsY.push(i)
@@ -282,7 +278,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         const takenSpace = [].slice.call(mainGridRef.current.children).filter((space) => {
           const spaceBounds = space.getBoundingClientRect()
           return (
-            blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
+            blockBounds.left === spaceBounds.left &&
             blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom) &&
             !space.classList.contains('active-block')
             )

@@ -7,12 +7,7 @@ const moveX = (mainGridRef, activePieceRef, blockSize) => {
       return true
     }
 
-    const blockBoundsX = []
     const blockBoundsY = []
-
-    for (let i = blockBounds.left; i <= blockBounds.right; i++){
-      blockBoundsX.push(i + blockSize)
-    }
 
     for (let i = blockBounds.top; i <= blockBounds.bottom; i++){
       blockBoundsY.push(i)
@@ -22,7 +17,7 @@ const moveX = (mainGridRef, activePieceRef, blockSize) => {
     [].slice.call(mainGridRef.current.children).filter((space) => space.classList.contains('taken')).forEach((space) => {
       const spaceBounds = space.getBoundingClientRect()
       if (
-          blockBoundsX.some(n => n > spaceBounds.left && n < spaceBounds.right) &&
+          blockBounds.left + blockSize === spaceBounds.left &&
           blockBoundsY.some(n => n > spaceBounds.top && n < spaceBounds.bottom)
       ) {
         collision = true
