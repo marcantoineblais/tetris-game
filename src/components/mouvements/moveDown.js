@@ -5,7 +5,8 @@ const moveDown = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, rate, b
     if (blockBounds.bottom + rate > mainGridBounds.bottom) {
       return true
     }
-   
+    
+    const blockBoundsX = [blockBounds.left + 2, (blockBounds.right + blockBounds.left) / 2, blockBounds.right - 2].map(n => n + blockSize)
     const blockBoundsY = [blockBounds.top + 2, (blockBounds.top + blockBounds.bottom) / 2, blockBounds.bottom - 2].map(n => n + rate)
 
     let collision
@@ -13,11 +14,15 @@ const moveDown = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, rate, b
     for (let i = 0; i < takenSpaces.length; i++) {
       const index = takenSpaces[i]
       const spaceBounds = spaces[index].getBoundingClientRect()
+      if (spaceBounds.bottom < blockBounds.top) {
+        break
+      }
+
       if (spaceBounds.top > blockBounds.bottom + rate) {
         continue
       }
 
-      if (spaceBounds.left !== blockBounds.left + blockSize) {
+      if (!blockBoundsX.some(n => n > spaceBounds.left && n <= spaceBounds.right)) {
         continue
       }
 
@@ -35,6 +40,7 @@ const moveDown = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, rate, b
   for (let i = 0; i < blocks.length; i++) {
     if (checkForCollision(blocks[i].getBoundingClientRect())) {
       collision = true
+      break
     }
   }
   

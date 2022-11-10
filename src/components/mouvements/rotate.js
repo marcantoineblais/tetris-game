@@ -10,6 +10,7 @@ const rotate = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, offset = 
       return true
     }
     
+    const blockBoundsX = [blockBounds.left + 2, (blockBounds.right + blockBounds.left) / 2, blockBounds.right - 2].map(n => n + offset)
     const blockBoundsY = [blockBounds.top + 2, (blockBounds.top + blockBounds.bottom) / 2, blockBounds.bottom - 2]
 
     let collision
@@ -21,7 +22,7 @@ const rotate = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, offset = 
         continue
       }
 
-      if (spaceBounds.left !== blockBounds.left + offset) {
+      if (!blockBoundsX.some(n => n > spaceBounds.left && n <= spaceBounds.right)) {
         continue
       }
 

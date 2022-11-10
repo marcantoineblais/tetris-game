@@ -6,6 +6,7 @@ const moveX = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, blockSize)
       return true
     }
 
+    const blockBoundsX = [blockBounds.left + 2, (blockBounds.right + blockBounds.left) / 2, blockBounds.right - 2].map(n => n + blockSize)
     const blockBoundsY = [blockBounds.top + 2, (blockBounds.top + blockBounds.bottom) / 2, blockBounds.bottom - 2]
 
     let collision
@@ -18,11 +19,11 @@ const moveX = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, blockSize)
         break
       }
 
-      if (spaceBounds.left !== blockBounds.left + blockSize) {
+      if (spaceBounds.top > blockBounds.bottom) {
         continue
       }
 
-      if (spaceBounds.top > blockBounds.bottom) {
+      if (!blockBoundsX.some(n => n > spaceBounds.left && n <= spaceBounds.right)) {
         continue
       }
 

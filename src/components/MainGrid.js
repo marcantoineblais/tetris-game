@@ -7,7 +7,6 @@ import rotate from "./mouvements/rotate"
 const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, incrementScore, setLevel, level }) => {
   // num of milliseconds to fall 1 block
   const [dropSpeed, setDropSpeed] = useState(800)
-  const [mainGridSpaces, setMainGridSpaces] = useState(null)
   const [pieceBlocks, setPieceBlocks] = useState(null)
   const [gameActive, setGameActive] = useState(false)
   const frame = 1000 / 60
@@ -46,7 +45,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     }
     
     setMainGridSpacesDimensions()
-    setMainGridSpaces(mainGridRef.current.children)
     window.addEventListener('resize', setMainGridSpacesDimensions)
     
     return () => {
@@ -157,7 +155,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           db.buffer[e.key] = setTimeout(() => {
             db.shortPush = db.shortPush.filter(key => key !== e.key)
             db.longPush = [...db.longPush, e.key]
-          }, 6 * frame)
+          }, 4 * frame)
         }
 
         if (cmdKeys.includes(e.key)) {
@@ -189,6 +187,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
     // CHECKS FOR MOVEMENT AND COLLISIONS
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
+    const mainGridSpaces = mainGridRef.current.children
     const movingLeft = () => {
       return moveX(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, -blockSize)
     }
@@ -286,6 +285,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
       blocksBounds.forEach(blockBounds => {
         let takenSpace
+        const blockBoundsX = [blockBounds.left + 2, (blockBounds.right + blockBounds.left) / 2, blockBounds.right - 2]
         const blockBoundsY = [blockBounds.top + 2, (blockBounds.top + blockBounds.bottom) / 2, blockBounds.bottom - 2]
 
         for(let i = 0; i < mainGridSpaces.length; i++) {
@@ -299,7 +299,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
             continue
           }
 
-          if (spaceBounds.left !== blockBounds.left) {
+          if (!blockBoundsX.some(n => n > spaceBounds.left && n <= spaceBounds.right)) {
             continue
           }
           
@@ -315,12 +315,16 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       clearInterval(refreshCycle)
       db.inputLock = true
       delete db.fallBufferTimeout
-
+      db.ghostBlocks.forEach(i => {
+        mainGridSpaces[i].classList.add('grid-space')
+        mainGridSpaces[i].classList.remove('ghost-piece')
+        mainGridSpaces[i].style.border = ''
+      })
+      db.ghostBlocks = []
       const numOfLines = destroyLines(mainGridRef)
       incrementScore(scoreChart[numOfLines])
       db.destroyedLines += numOfLines
-      db.takenSpaces.sort((a, b) => a - b)
-      console.log(db.takenSpaces);
+      db.takenSpaces.sort((a, b) => b - a)
       setLevel(Math.floor(db.destroyedLines / 10))
       if (levelChart[level]) {
         setDropSpeed(levelChart[level])
@@ -337,7 +341,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       db.fallBufferTimeout = setTimeout(() => {
         if (pieceBlocks && movingDown(rate)) {
           db.coord.y += rate
-          drawPiece()
         } else {
           clearTimeout(db.fallBufferTimeout)
           stopDroppingOnCollision()
@@ -345,6 +348,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       }, 6 * frame)
     }
 
+    // DESTROY COMPLETE LINES AFTER PIECE HAVE DROPPED
     const destroyLines = () => {
       let count = 0
       for (let i = 0; i < mainGridSpaces.length - 12; i += 12) {
@@ -367,6 +371,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
       if (count) {
         db.takenSpaces = []
+        db.ghostBlocks = []
         for (let i = 0; i < mainGridSpaces.length; i++) {
           if (mainGridSpaces[i].classList.contains('taken')) {
             db.takenSpaces.push(i)
@@ -443,7 +448,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       window.removeEventListener('keyup', onKeyUp)
     }
   }, [
-    mainGridSpaces,
     blockSize,
     dropSpeed,
     pieceBlocks,
