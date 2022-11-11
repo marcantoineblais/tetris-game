@@ -1,10 +1,10 @@
-const rotate = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, offset = 0) => {
+const rotate = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, maxRotation, offset = 0) => {
 
   const piece = pieceRef.current
   const checkForCollision = (blockBounds) => {
     if (
-      blockBounds.right + offset <= mainGridBounds.left ||
-      blockBounds.left + offset >= mainGridBounds.right ||
+      blockBounds.left + offset < mainGridBounds.left ||
+      blockBounds.right + offset > mainGridBounds.right ||
       blockBounds.bottom > mainGridBounds.bottom
     ) {
       return true
@@ -37,7 +37,7 @@ const rotate = (mainGridBounds, mainGridSpaces, pieceRef, takenSpaces, offset = 
 
   const beforeRotation = piece.style.transform
   const currentValue = piece.style.transform.split("(")
-  const zDegrees = (parseInt(currentValue[1]) + 90) % 360
+  const zDegrees = (parseInt(currentValue[1]) + 90) % maxRotation
   piece.style.transform = `rotateZ(${zDegrees}deg)`
 
   const blocks = pieceRef.current.children

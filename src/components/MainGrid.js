@@ -201,14 +201,14 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     }
     
     const rotation = () => {
-      if (!rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces)) {
-        if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, -blockSize)) {
+      if (!rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation)) {
+        if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation, -blockSize)) {
           db.coord.x -= blockSize
-        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef, blockSize)) {
+        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef,db.takenSpaces, db.piece.maxRotation, blockSize)) {
           db.coord.x += blockSize
-        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, -2 * blockSize)) {
+        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation, -2 * blockSize)) {
           db.coord.x += -2 * blockSize
-        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, 2 * blockSize)) {
+        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation, 2 * blockSize)) {
           db.coord.x += 2 * blockSize
         }
       }
@@ -388,33 +388,94 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       }
 
       const inputs = db.shortPush.concat(db.longPush)
+      const blocks = pieceRef.current.children
+      const positionIndex = []
+      for (let i = 0; i < blocks.length; i++) {
+        const blockBounds = blocks[i].getBoundingClientRect()
+        const coordX = Math.floor((blockBounds.left - mainGridBounds.left) / blockSize)
+        const coordY = Math.floor((blockBounds.top - mainGridBounds.top + 2) / blockSize) * 12
+        const coordYBottom = Math.floor((blockBounds.bottom - mainGridBounds.top - 2) / blockSize) * 12
+        positionIndex.push({ top: coordX + coordY, bottom: coordX + coordYBottom })
+      }
+
       if (inputs.includes(' ')) {
         rotation()
         db.redrawGhostPiece = true
       }
       
-      let offsetX = 0
-      if (inputs.includes("ArrowLeft") && movingLeft()) {
-        db.coord.x -= blockSize
-        db.redrawGhostPiece = true
-        offsetX = -blockSize
-      } else if (inputs.includes("ArrowRight") && movingRight()) {
-        db.coord.x += blockSize
-        db.redrawGhostPiece = true
-        offsetX = blockSize
+      if (inputs.includes("ArrowLeft")) {
+        let collision
+        for (let i = 0; i < positionIndex.length; i++) {
+          const index = positionIndex[i]
+          if (db.takenSpaces.includes(index.top - 1) || db.takenSpaces.includes(index.bottom - 1) || index.top % 12 === 0) {
+            collision = true
+            break
+          }
+        }
+        if (!collision) {
+          db.coord.x -= blockSize
+          db.redrawGhostPiece = true
+          positionIndex.forEach(index => {
+            index.top -= 1
+            index.bottom -= 1
+          })
+        }
+      } else if (inputs.includes("ArrowRight")) {
+        let collision
+        for (let i = 0; i < positionIndex.length; i++) {
+          const index = positionIndex[i]
+          if (db.takenSpaces.includes(index.top + 1) || db.takenSpaces.includes(index.bottom + 1) || (index.top + 1) % 12 === 0) {
+            collision = true
+            break
+          }
+        }
+        if (!collision) {
+          db.coord.x += blockSize
+          db.redrawGhostPiece = true
+          positionIndex.forEach(index => {
+            index.top += 1
+            index.bottom += 1
+          })
+        }
       }
       
-      let rate
       if (inputs.includes('ArrowDown')) {
-        rate = blockSize - ((db.coord.y + db.initY) % blockSize)
+        let collision
+        for (let i = 0; i < positionIndex.length; i++) {
+          const index = positionIndex[i]
+          if (db.takenSpaces.includes(index.bottom + 12) || index.top + 12 >= 264) {
+            collision = true
+            break
+          }
+        }
+        if (!collision) {
+          positionIndex.forEach(index => {
+            index.top += 12
+            index.bottom += 12
+          })
+          db.coord.y += mainGridSpaces[positionIndex[0].top].getBoundingClientRect().top - blocks[0].getBoundingClientRect().top
+        } else {
+          stopDroppingOnCollision()
+        }
       } else {
-        rate = blockSize / (dropSpeed / frame)
-      }
-      if (movingDown(rate, offsetX)) {
-        delete db.fallBufferTimeout
-        db.coord.y += rate
-      } else {
-        beforeCollision(rate)
+        const rate = blockSize / (dropSpeed / frame)
+        
+        let collision
+        if ((db.coordY % blockSize) + rate >= blockSize) {
+          for (let i = 0; i < positionIndex.length; i++) {
+            const index = positionIndex[i]
+            if (db.takenSpaces.includes(index.bottom + 12) || index.top + 12 >= 264) {
+              collision = true
+              break
+            }
+          }
+        }
+
+        if (!collision) {
+          db.coord.y += rate
+        } else {
+          stopDroppingOnCollision()
+        }
       }
       
       db.shortPush = []
