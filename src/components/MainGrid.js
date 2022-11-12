@@ -188,14 +188,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     // CHECKS FOR MOVEMENT AND COLLISIONS
     const mainGridBounds = mainGridRef.current.getBoundingClientRect()
     const mainGridSpaces = mainGridRef.current.children
-    const movingLeft = () => {
-      return moveX(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, -blockSize)
-    }
-
-    const movingRight = () => {
-      return moveX(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, blockSize)
-    }
-
     const movingDown = (rate, offsetX = 0) => {
       return moveDown(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, rate, offsetX)
     }
@@ -214,23 +206,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       }
     }
 
-    const ghostPiece = () => {
-      let offsetY = blockSize - ((db.coord.y + db.initY) % blockSize)
-      if (!movingDown(offsetY)) {
-        db.redrawGhostPiece = false
-        return
-      }
-      
-      while (movingDown(offsetY + blockSize)) {
-        offsetY += blockSize
-      }
-
-      const blocks = pieceRef.current.children
-      const blocksBounds = []
-      for (let i = 0; i < blocks.length; i++) {
-        blocksBounds.push(blocks[i].getBoundingClientRect())
-      }
-
+    const ghostPiece = (positionIndex) => {
       db.ghostBlocks.forEach(i => {
         mainGridSpaces[i].classList.add('grid-space')
         mainGridSpaces[i].classList.remove('ghost-piece')
@@ -238,94 +214,51 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       })
       db.ghostBlocks = []
 
-      const ghostBlockSpaces = blocksBounds.map(blockBounds => {
-        const blockBoundsY = [blockBounds.top + 2, (blockBounds.top + blockBounds.bottom) / 2, blockBounds.bottom - 2].map(n => n + offsetY)
-        let ghostPiece
-        for (let i = 0; i < mainGridSpaces.length; i++) {
-          const spaceBounds = mainGridSpaces[i].getBoundingClientRect()
-          if (spaceBounds.top > blockBounds.bottom + offsetY) {
-            i += 11 - (i % 12)
-            continue
-          }
-
-          if (spaceBounds.left !== blockBounds.left) {
-            continue
-          }
-          
-          if (blockBoundsY.some(n => n > spaceBounds.top && n <= spaceBounds.bottom)) {
-            ghostPiece = mainGridSpaces[i]
-            db.ghostBlocks.push(i)
+      let collision
+      while (!collision) {
+        for (let i = 0; i < positionIndex.length; i++) {
+          const index = positionIndex[i]
+          if (db.takenSpaces.includes(index.top + 12) || index.top + 12 >= 264) {
+            collision = true
             break
           }
         }
-        return ghostPiece
-      })
-
-      if (ghostBlockSpaces.some(space => !space)) {
-        db.redrawGhostPiece = false
-        return
+        if (!collision) {
+          positionIndex.forEach(index => index.top += 12)
+        }
       }
 
-      ghostBlockSpaces.forEach(space => {
-        space.classList.remove('grid-space')
-        space.classList.add('ghost-piece')
-        space.style.border = `2px solid ${db.piece.color}`
+      positionIndex.forEach(index => {
+        db.ghostBlocks.push(index.top)
+        mainGridSpaces[index.top].classList.remove('grid-space')
+        mainGridSpaces[index.top].classList.add('ghost-piece')
+        mainGridSpaces[index.top].style.border = `2px solid ${db.piece.color}`
       })
-      
-      db.redrawGhostPiece = false
     }
 
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
-    const stopDroppingOnCollision = () => {
-      const blocks = pieceRef.current.children
-      const blocksBounds = []
-      for (let i = 0; i < blocks.length; i++) {
-        blocksBounds.push(blocks[i].getBoundingClientRect())
-      }
-
-      blocksBounds.forEach(blockBounds => {
-        let takenSpace
-        const blockBoundsX = [blockBounds.left + 2, (blockBounds.right + blockBounds.left) / 2, blockBounds.right - 2]
-        const blockBoundsY = [blockBounds.top + 2, (blockBounds.top + blockBounds.bottom) / 2, blockBounds.bottom - 2]
-
-        for(let i = 0; i < mainGridSpaces.length; i++) {
-          if (db.takenSpaces.includes(i)) {
-            continue
-          }
-
-          const spaceBounds = mainGridSpaces[i].getBoundingClientRect()
-          if (spaceBounds.top > blockBounds.bottom) {
-            i += 11 - (i % 12)
-            continue
-          }
-
-          if (!blockBoundsX.some(n => n > spaceBounds.left && n <= spaceBounds.right)) {
-            continue
-          }
-          
-          if (blockBoundsY.some(n => n > spaceBounds.top && n <= spaceBounds.bottom)) {
-            takenSpace = mainGridSpaces[i]
-            takenSpace.classList.add('taken', db.piece.color);
-            db.takenSpaces.push(i)
-            break
-          }
-        }
-      })
-            
-      clearInterval(refreshCycle)
-      db.inputLock = true
-      delete db.fallBufferTimeout
+    const stopDroppingOnCollision = (positionIndex) => {
       db.ghostBlocks.forEach(i => {
         mainGridSpaces[i].classList.add('grid-space')
         mainGridSpaces[i].classList.remove('ghost-piece')
         mainGridSpaces[i].style.border = ''
       })
       db.ghostBlocks = []
+
+      positionIndex.forEach(index => {
+        db.takenSpaces.push(index.bottom)
+        mainGridSpaces[index.bottom].classList.add('taken', db.piece.color)
+      })
+                  
+      clearInterval(refreshCycle)
+      db.inputLock = true
+      delete db.fallBufferTimeout
+      
       const numOfLines = destroyLines(mainGridRef)
-      incrementScore(scoreChart[numOfLines])
       db.destroyedLines += numOfLines
-      db.takenSpaces.sort((a, b) => b - a)
+      incrementScore(scoreChart[numOfLines])
       setLevel(Math.floor(db.destroyedLines / 10))
+      
       if (levelChart[level]) {
         setDropSpeed(levelChart[level])
       }
@@ -400,7 +333,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
       if (inputs.includes(' ')) {
         rotation()
-        db.redrawGhostPiece = true
       }
       
       if (inputs.includes("ArrowLeft")) {
@@ -414,7 +346,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         }
         if (!collision) {
           db.coord.x -= blockSize
-          db.redrawGhostPiece = true
           positionIndex.forEach(index => {
             index.top -= 1
             index.bottom -= 1
@@ -443,7 +374,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         let collision
         for (let i = 0; i < positionIndex.length; i++) {
           const index = positionIndex[i]
-          if (db.takenSpaces.includes(index.bottom + 12) || index.top + 12 >= 264) {
+          if (db.takenSpaces.includes(index.bottom + 12) || index.bottom + 12 >= 264) {
             collision = true
             break
           }
@@ -455,16 +386,18 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           })
           db.coord.y += mainGridSpaces[positionIndex[0].top].getBoundingClientRect().top - blocks[0].getBoundingClientRect().top
         } else {
-          stopDroppingOnCollision()
+          stopDroppingOnCollision(positionIndex)
         }
       } else {
         const rate = blockSize / (dropSpeed / frame)
         
         let collision
+        let updatedIndex = 0
         if ((db.coordY % blockSize) + rate >= blockSize) {
+          updatedIndex = 12
           for (let i = 0; i < positionIndex.length; i++) {
             const index = positionIndex[i]
-            if (db.takenSpaces.includes(index.bottom + 12) || index.top + 12 >= 264) {
+            if (db.takenSpaces.includes(index.bottom + 12) || index.bottom + 12 >= 264) {
               collision = true
               break
             }
@@ -473,11 +406,16 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
         if (!collision) {
           db.coord.y += rate
+          positionIndex.forEach(index => {
+            index.top += updatedIndex
+            index.bottom += updatedIndex
+          })
         } else {
           stopDroppingOnCollision()
         }
       }
       
+      ghostPiece(positionIndex)
       db.shortPush = []
     }
 
@@ -485,15 +423,10 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       if (pieceBlocks && db.piece) {
         executeInputs()
         drawPiece()
-        if (db.redrawGhostPiece) {
-          ghostPiece()
-        }
       }
     }, frame)
     
     if (gameActive && pieceBlocks) {
-      drawPiece()
-      ghostPiece()
       setTimeout(() => {
         db.inputLock = false
       }, 30 * frame)
