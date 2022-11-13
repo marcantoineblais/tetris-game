@@ -1,10 +1,19 @@
 import React, { useEffect, useRef, useState } from "react"
 import { spawnPiece } from "./assets"
-import moveX from "./mouvements/moveX"
 import moveDown from "./mouvements/moveDown"
-import rotate from "./mouvements/rotate"
 
-const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, incrementScore, setLevel, level }) => {
+const MainGrid = ({ 
+  container,
+  db,
+  blockSize,
+  setBlockSize,
+  setNextPiece,
+  incrementScore,
+  setLevel,
+  level,
+  blockStyle,
+  setBlockStyle
+}) => {
   // num of milliseconds to fall 1 block
   const [dropSpeed, setDropSpeed] = useState(800)
   const [pieceBlocks, setPieceBlocks] = useState(null)
@@ -42,6 +51,17 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       setBlockSize(dimension)
       container.current.style.width = 'fit-content'
       container.current.style.height = 'fit-content'
+
+      setBlockStyle({
+        front: { transform: `translateZ(${dimension / 2}px)` },
+        back: { transform: `rotateY(180deg) translateZ(${dimension / 2}px)` },
+        left: { transform: `rotateY(-90deg) translateZ(${dimension / 2}px)` },
+        right: { transform: `rotateY(90deg) translateZ(${dimension / 2}px)` },
+        top: { transform: `rotateX(90deg) translateZ(${dimension / 2}px)` },
+        bottom: { transform: `rotateX(-90deg) translateZ(${dimension / 2}px)` }
+      })
+
+      document.body.style.fontSize = `${dimension / 4}px`
     }
     
     setMainGridSpacesDimensions()
@@ -50,7 +70,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     return () => {
       window.removeEventListener('resize', setMainGridSpacesDimensions)
     }
-  }, [container, setBlockSize])
+  }, [container, setBlockSize, setBlockStyle])
   
 
   useEffect(() => {
@@ -64,7 +84,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         const coordX = coord.x * blockSize
         const coordY = coord.y * blockSize
         
-        const blockStyle = {
+        const mainStyle = {
           width: blockSize.toString() + 'px',
           height: blockSize.toString() + 'px',
           left: coordX.toString() + 'px',
@@ -73,13 +93,13 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         }
 
         return (
-          <div className={"block piece " + piece.color} style={blockStyle} key={i}>
-            <div className='front face'></div> 
-            <div className='back face'></div>
-            <div className='left face'></div>
-            <div className='right face'></div>
-            <div className='top face'></div>
-            <div className='bottom face'></div>
+          <div className={"block piece " + piece.color} style={mainStyle} key={i}>
+            <div className='face' style={blockStyle.front}></div> 
+            <div className='face' style={blockStyle.back}></div>
+            <div className='face' style={blockStyle.left}></div>
+            <div className='face' style={blockStyle.right}></div>
+            <div className='face' style={blockStyle.top}></div>
+            <div className='face' style={blockStyle.bottom}></div>
           </div>
         )
       })
@@ -111,7 +131,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     db.nextPiece = piece
     setNextPiece(piece)
     renderPiece(db.piece)
-  }, [db, pieceBlocks, blockSize, setNextPiece])
+  }, [db, pieceBlocks, blockSize, setNextPiece, blockStyle])
   
   useEffect(() => {
     
@@ -192,20 +212,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       return moveDown(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, rate, offsetX)
     }
     
-    const rotation = () => {
-      if (!rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation)) {
-        if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation, -blockSize)) {
-          db.coord.x -= blockSize
-        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef,db.takenSpaces, db.piece.maxRotation, blockSize)) {
-          db.coord.x += blockSize
-        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation, -2 * blockSize)) {
-          db.coord.x += -2 * blockSize
-        } else if (rotate(mainGridBounds, mainGridSpaces, pieceRef, db.takenSpaces, db.piece.maxRotation, 2 * blockSize)) {
-          db.coord.x += 2 * blockSize
-        }
-      }
-    }
-
     const ghostPiece = (positionIndex) => {
       db.ghostBlocks.forEach(i => {
         mainGridSpaces[i].classList.add('grid-space')
@@ -266,18 +272,14 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
     }
 
     // BUFFER PERIOD TO MOVE A PIECE ONCE IT LANDED
-    const beforeCollision = (rate) => {
+    const beforeCollision = (positionIndex) => {
       if (db.fallBufferTimeout) {
         return
       }
 
       db.fallBufferTimeout = setTimeout(() => {
-        if (pieceBlocks && movingDown(rate)) {
-          db.coord.y += rate
-        } else {
-          clearTimeout(db.fallBufferTimeout)
-          stopDroppingOnCollision()
-        }
+
+        stopDroppingOnCollision(positionIndex)
       }, 6 * frame)
     }
 
@@ -322,7 +324,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
 
       const inputs = db.shortPush.concat(db.longPush)
       const blocks = pieceRef.current.children
-      const positionIndex = []
+      let positionIndex = []
       for (let i = 0; i < blocks.length; i++) {
         const blockBounds = blocks[i].getBoundingClientRect()
         const coordX = Math.floor((blockBounds.left - mainGridBounds.left) / blockSize)
@@ -330,9 +332,129 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         const coordYBottom = Math.floor((blockBounds.bottom - mainGridBounds.top - 2) / blockSize) * 12
         positionIndex.push({ top: coordX + coordY, bottom: coordX + coordYBottom })
       }
-
+      
       if (inputs.includes(' ')) {
-        rotation()
+        const currentRotation = pieceRef.current.style.transform
+        const rotDeg = parseInt(currentRotation.split('(')[1])
+        pieceRef.current.style.transform = `rotate(${(rotDeg + 90) % db.piece.maxRotation}deg)`
+        const newPositionIndex = []
+        let blocksOffgrid = []
+    
+        for (let i = 0; i < blocks.length; i++) {
+          const newBlocksBounds = blocks[i].getBoundingClientRect()
+          let coordX = Math.floor((newBlocksBounds.left - mainGridBounds.left) / blockSize)
+          const coordY = Math.floor((newBlocksBounds.top + 2 - mainGridBounds.top) / blockSize) * 12
+          const coordYBottom = Math.floor((newBlocksBounds.bottom - 2 - mainGridBounds.top) / blockSize) * 12
+          
+          let offgrid = 0
+          if (coordX < 0 || coordX > 11) {
+            offgrid = coordX % 11
+            coordX = 0
+          }
+          newPositionIndex.push({ top: coordX + coordY, bottom: coordX + coordYBottom })
+          blocksOffgrid.push(offgrid)
+        }
+        
+        let collision
+        for (let i = 0; i < blocks.length; i++) {
+          const index = newPositionIndex[i]
+          if (db.takenSpaces.includes(index.top) || db.takenSpaces.includes(index.bottom) || blocksOffgrid[i] )  {
+            collision = true
+            break
+          }
+        }
+
+        if (collision) {
+          collision = false
+          for (let i = 0; i < blocks.length; i++) {
+            const index = newPositionIndex[i]
+            if (
+              (db.takenSpaces.includes(index.top - 1) || db.takenSpaces.includes(index.bottom - 1)) ||
+              (blocksOffgrid[i] >= 0 && blocksOffgrid[i] - 1 > 0) 
+            ) {
+              collision = true
+              break
+            }
+          }
+
+          if (!collision) {
+            newPositionIndex.forEach((index, i) => {
+              index.top -= 1 - blocksOffgrid[i]
+              index.bottom -= 1 - blocksOffgrid[i]
+            })
+          }
+        }
+        
+        if (collision) {
+          collision = false
+          for (let i = 0; i < blocks.length; i++) {
+            const index = newPositionIndex[i]
+            if (
+              (db.takenSpaces.includes(index.top + 1) || db.takenSpaces.includes(index.bottom + 1)) ||
+              (blocksOffgrid[i] <= 0 && blocksOffgrid[i] + 1 < 0)
+            ) {
+              collision = true
+              break
+            }
+          }
+
+          if (!collision) {
+            newPositionIndex.forEach((index, i) => {
+              index.top += 1 + blocksOffgrid[i]
+              index.bottom += 1 + blocksOffgrid[i]
+            })
+          }
+        }
+      
+        if (collision) {
+          collision = false
+          for (let i = 0; i < blocks.length; i++) {
+            const index = newPositionIndex[i]
+            if (
+              (db.takenSpaces.includes(index.top - 2) || db.takenSpaces.includes(index.bottom - 2)) ||
+              (blocksOffgrid[i] >= 0 && blocksOffgrid[i] - 2 > 0)
+            ) {
+              collision = true
+              break
+            }
+          }
+
+          if (!collision) {
+            newPositionIndex.forEach((index, i) => {
+              index.top -= 2 - blocksOffgrid[i]
+              index.bottom -= 2 - blocksOffgrid[i]
+            })
+          }
+        }
+
+        if (collision) {
+          collision = false
+          for (let i = 0; i < blocks.length; i++) {
+            const index = newPositionIndex[i]
+            if (
+              (db.takenSpaces.includes(index.top + 2) || db.takenSpaces.includes(index.bottom + 2)) ||
+              (blocksOffgrid[i] <= 0 && blocksOffgrid[i] + 2 < 0)
+            ) {
+              collision = true
+              break
+            }
+          }
+
+          if (!collision) {
+            newPositionIndex.forEach((index, i) => {
+              index.top += 2 + blocksOffgrid[i]
+              index.bottom += 2 + blocksOffgrid[i]
+            })
+          }
+        }
+
+        if (collision) {
+          pieceRef.current.style.transform = currentRotation
+        } else {
+          const newSpace = mainGridSpaces[newPositionIndex[0].top].getBoundingClientRect()
+          db.coord.x += newSpace.left - blocks[0].getBoundingClientRect().left
+          positionIndex = newPositionIndex
+        }
       }
       
       if (inputs.includes("ArrowLeft")) {
@@ -362,7 +484,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
         }
         if (!collision) {
           db.coord.x += blockSize
-          db.redrawGhostPiece = true
           positionIndex.forEach(index => {
             index.top += 1
             index.bottom += 1
@@ -389,11 +510,14 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
           stopDroppingOnCollision(positionIndex)
         }
       } else {
-        const rate = blockSize / (dropSpeed / frame)
+        const position = db.coord.y + db.initY
+        let rate = blockSize / (dropSpeed / frame)
         
         let collision
         let updatedIndex = 0
-        if ((db.coordY % blockSize) + rate >= blockSize) {
+        if ((position % blockSize) + rate >= blockSize) {
+          rate = blockSize - (position % blockSize)
+        } else if (position % blockSize === 0) {
           updatedIndex = 12
           for (let i = 0; i < positionIndex.length; i++) {
             const index = positionIndex[i]
@@ -403,7 +527,6 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
             }
           }
         }
-
         if (!collision) {
           db.coord.y += rate
           positionIndex.forEach(index => {
@@ -411,7 +534,7 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
             index.bottom += updatedIndex
           })
         } else {
-          stopDroppingOnCollision()
+          stopDroppingOnCollision(positionIndex)
         }
       }
       
@@ -460,12 +583,12 @@ const MainGrid = ({ container, db, blockSize, setBlockSize, setNextPiece, increm
       for (let x = 0; x < 12; x += 1) {
         gridSpaces.push(
           <div className="grid-space" key={`${x}, ${y}`}>
-            <div className='front face'></div>
-            <div className='back face'></div>
-            <div className='left face'></div>
-            <div className='right face'></div>
-            <div className='top face'></div>
-            <div className='bottom face'></div>
+            <div className='face' style={blockStyle.front}></div>
+            <div className='face' style={blockStyle.back}></div>
+            <div className='face' style={blockStyle.left}></div>
+            <div className='face' style={blockStyle.right}></div>
+            <div className='face' style={blockStyle.top}></div>
+            <div className='face' style={blockStyle.bottom}></div>
           </div>
         )
       }

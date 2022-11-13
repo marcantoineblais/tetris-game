@@ -7,6 +7,7 @@ const Game = () => {
 
   const [db, setDB] = useState(null)
   const [blockSize, setBlockSize] = useState(null)
+  const [blockStyle, setBlockStyle] = useState({})
   const [nextPiece, setNextPiece] = useState(null)
   const [score, setScore] = useState(0)
   const [level, setLevel] = useState(0)
@@ -49,12 +50,15 @@ const Game = () => {
             incrementScore={incrementScore}
             level = {level}
             setLevel={setLevel}
+            blockStyle={blockStyle}
+            setBlockStyle={setBlockStyle}
           />
         </div>
         <div className="game-next-grid">
           <NextPieceGrid
             piece={nextPiece}
             blockSize={blockSize}
+            blockStyle={blockStyle}
           />
         </div>
       </div>

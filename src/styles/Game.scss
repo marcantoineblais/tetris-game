@@ -11,7 +11,7 @@
     height: 100%;
     display: flex;
     justify-content: center;
-    gap: 3rem;
+    gap: 4px;
 
     .game-main-grid {
       height: 100%;
@@ -41,7 +41,7 @@
   .piece {
     visibility: hidden;
     border: 2px solid;
-    border-radius: 8px;
+    transform-style: preserve-3d;
   }
 
   .face {
@@ -51,29 +51,11 @@
     height: inherit;
     border: inherit;
     border-color: inherit;
-    border-radius: 8px;
+    border-radius: inherit;
     background: inherit;
     background-color: inherit;
     opacity: inherit;
-  }
-
-  .front {
-    transform: translateZ(25px);
-  }
-  .back {
-    transform: rotateY(-180deg) translateZ(25px);
-  }
-  .left {
-    transform: rotateY(-90deg) translateZ(25px);
-  }
-  .right {
-    transform: rotateY(90deg) translateZ(25px);
-  }
-  .top {
-    transform: rotateX(90deg) translateZ(25px);
-  }
-  .bottom {
-    transform: rotateX(-90deg) translateZ(25px);
+    transform-style: preserve-3d;
   }
 
   .pink {

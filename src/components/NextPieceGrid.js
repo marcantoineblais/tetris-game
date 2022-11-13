@@ -1,7 +1,6 @@
-import { dblClick } from "@testing-library/user-event/dist/click"
 import React, { useEffect, useRef, useState } from "react"
 
-const NextPieceGrid = ({ piece, blockSize }) => {
+const NextPieceGrid = ({ piece, blockSize, blockStyle }) => {
 
   const [nextPiece, setNextPiece] = useState(null)
   const containerRef = useRef()
@@ -45,22 +44,23 @@ const NextPieceGrid = ({ piece, blockSize }) => {
         const coordX = coord.x * blockSize
         const coordY = coord.y * blockSize
         
-        const blockStyle = {
+        const mainStyle = {
           width: (blockSize).toString() + 'px',
           height: (blockSize).toString() + 'px',
           left: coordX.toString() + 'px',
           top: coordY.toString() + 'px',
-          borderColor: 'rgba(0, 0, 0, 0.1)'
+          borderColor: 'rgba(0, 0, 0, 0.1)',
+          borderRadius: (blockSize / 8).toString() + 'px'
         }
 
         return (
-          <div className={'block piece ' + piece.color} style={blockStyle} key={i}>
-            <div className='front face'></div>
-            <div className='back face'></div>
-            <div className='left face'></div>
-            <div className='right face'></div>
-            <div className='top face'></div>
-            <div className='bottom face'></div>
+          <div className={'block piece ' + piece.color} style={mainStyle} key={i}>
+            <div className='face' style={blockStyle.front}></div>
+            <div className='face' style={blockStyle.back}></div>
+            <div className='face' style={blockStyle.left}></div>
+            <div className='face' style={blockStyle.right}></div>
+            <div className='face' style={blockStyle.top}></div>
+            <div className='face' style={blockStyle.bottom}></div>
           </div>
         )
       })
@@ -74,7 +74,7 @@ const NextPieceGrid = ({ piece, blockSize }) => {
     nextPieceRef.current.style.top = top
     
     renderPiece()
-  }, [piece, blockSize])
+  }, [piece, blockSize, blockStyle])
 
   return (
     <div className="next-grid-content">
