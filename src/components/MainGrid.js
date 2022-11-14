@@ -244,21 +244,21 @@ const MainGrid = ({
 
     // STOP PIECE FROM FALLING ON VERTICAL COLLISION
     const stopDroppingOnCollision = (positionIndex) => {
-      db.ghostBlocks.forEach(i => {
-        mainGridSpaces[i].classList.add('grid-space')
-        mainGridSpaces[i].classList.remove('ghost-piece')
-        mainGridSpaces[i].style.border = ''
+      db.inputLock = true
+      clearInterval(refreshCycle)
+      delete db.fallBufferTimeout
+
+      db.ghostBlocks.forEach(index => {
+        mainGridSpaces[index].classList.add('grid-space')
+        mainGridSpaces[index].classList.remove('ghost-piece')
+        mainGridSpaces[index].style.border = ''
       })
       db.ghostBlocks = []
 
       positionIndex.forEach(index => {
         db.takenSpaces.push(index.bottom)
         mainGridSpaces[index.bottom].classList.add('taken', db.piece.color)
-      })
-                  
-      clearInterval(refreshCycle)
-      db.inputLock = true
-      delete db.fallBufferTimeout
+      })     
       
       const numOfLines = destroyLines(mainGridRef)
       db.destroyedLines += numOfLines
@@ -323,140 +323,74 @@ const MainGrid = ({
       }
       
       const inputs = db.shortPush.concat(db.longPush)
-      let positionIndex = []
-      
+      const afterRotationIndex = []
+      let rotation
       if (inputs.includes(' ')) {
         const currentRotation = pieceRef.current.style.transform
         const rotDeg = parseInt(currentRotation.split('(')[1])
         pieceRef.current.style.transform = `rotate(${(rotDeg + 90) % db.piece.maxRotation}deg)`
         const blocks = pieceRef.current.children
-        const afterRotationIndex = []
-        const blocksOffgrid = []
     
         for (let i = 0; i < blocks.length; i++) {
-          const blocksBounds = blocks[i].getBoundingClientRect()
-          let coordX = Math.floor((blocksBounds.left - mainGridBounds.left) / blockSize)
-          const coordYTop = Math.floor((blocksBounds.top + 2 - mainGridBounds.top) / blockSize) * 12
-          const coordYBottom = Math.floor((blocksBounds.bottom - 2 - mainGridBounds.top) / blockSize) * 12
-          
-          let offgrid = 0
-          if (coordX < 0 || coordX > 11) {
-            offgrid = coordX % 11
-            coordX = 0
-          }
+          const blockBounds = blocks[i].getBoundingClientRect()
+          let coordX = Math.floor((blockBounds.left - mainGridBounds.left) / blockSize)
+          const coordYTop = Math.floor((blockBounds.top + 2 - mainGridBounds.top) / blockSize) * 12
+          const coordYBottom = Math.floor((blockBounds.bottom - 2 - mainGridBounds.top) / blockSize) * 12
           afterRotationIndex.push({ top: coordX + coordYTop, bottom: coordX + coordYBottom })
-          blocksOffgrid.push(offgrid)
         }
         
         let collision
-        for (let i = 0; i < blocks.length; i++) {
-          const index = afterRotationIndex[i]
-          if (db.takenSpaces.includes(index.top) || db.takenSpaces.includes(index.bottom) || blocksOffgrid[i] )  {
-            collision = true
+        const offsets = [0, 1, -1, 2, -2]
+        for (let n = 0; n < offsets.length; n++) {
+          collision = false
+          const offset = offsets[n]
+          
+          if (
+            (offset < 0 && db.coord.x < (5 * blockSize)) ||
+            (offset > 0 && db.coord.x > (7 * blockSize))
+          ) {
+            continue
+          }
+
+          const outOfBounds = (afterRotationIndex.some(index => (index.top + offset) % 12 === 0) && afterRotationIndex.some(index => (index.top + offset) % 12 === 11))
+          for (let i = 0; i < blocks.length; i++) {
+            const index = afterRotationIndex[i]
+            if (db.takenSpaces.includes(index.top + offset) || db.takenSpaces.includes(index.bottom + offset) || outOfBounds)  {
+              collision = true
+              break
+            }
+          }
+
+          if (!collision) {
+            afterRotationIndex.forEach(index => {
+              index.top += offset
+              index.bottom += offset
+            })
             break
           }
         }
 
         if (collision) {
-          collision = false
-          for (let i = 0; i < blocks.length; i++) {
-            const index = afterRotationIndex[i]
-            if (
-              (db.takenSpaces.includes(index.top - 1) || db.takenSpaces.includes(index.bottom - 1)) ||
-              (blocksOffgrid[i] && blocksOffgrid[i] - 1 > 0) 
-            ) {
-              collision = true
-              break
-            }
-          }
-
-          if (!collision) {
-            afterRotationIndex.forEach((index, i) => {
-              index.top -= 1 - blocksOffgrid[i]
-              index.bottom -= 1 - blocksOffgrid[i]
-            })
-          }
-        }
-        
-        if (collision) {
-          collision = false
-          for (let i = 0; i < blocks.length; i++) {
-            const index = afterRotationIndex[i]
-            if (
-              (db.takenSpaces.includes(index.top + 1) || db.takenSpaces.includes(index.bottom + 1)) ||
-              (blocksOffgrid[i] && blocksOffgrid[i] + 1 < 0)
-            ) {
-              collision = true
-              break
-            }
-          }
-
-          if (!collision) {
-            afterRotationIndex.forEach((index, i) => {
-              index.top += 1 + blocksOffgrid[i]
-              index.bottom += 1 + blocksOffgrid[i]
-            })
-          }
-        }
-      
-        if (collision) {
-          collision = false
-          for (let i = 0; i < blocks.length; i++) {
-            const index = afterRotationIndex[i]
-            if (
-              (db.takenSpaces.includes(index.top - 2) || db.takenSpaces.includes(index.bottom - 2)) ||
-              (blocksOffgrid[i] && blocksOffgrid[i] - 2 > 0)
-            ) {
-              collision = true
-              break
-            }
-          }
-
-          if (!collision) {
-            afterRotationIndex.forEach((index, i) => {
-              index.top -= 2 - blocksOffgrid[i]
-              index.bottom -= 2 - blocksOffgrid[i]
-            })
-          }
-        }
-
-        if (collision) {
-          collision = false
-          for (let i = 0; i < blocks.length; i++) {
-            const index = afterRotationIndex[i]
-            if (
-              (db.takenSpaces.includes(index.top + 2) || db.takenSpaces.includes(index.bottom + 2)) ||
-              (blocksOffgrid[i] && blocksOffgrid[i] + 2 < 0)
-            ) {
-              collision = true
-              break
-            }
-          }
-          
-          if (!collision) {
-            afterRotationIndex.forEach((index, i) => {
-              index.top += 2 + blocksOffgrid[i]
-              index.bottom += 2 + blocksOffgrid[i]
-            })
-          }
-        }
-        
-        if (collision) {
           pieceRef.current.style.transform = currentRotation
         } else {
           const newSpace = mainGridSpaces[afterRotationIndex[0].top].getBoundingClientRect()
           db.coord.x += newSpace.left - pieceRef.current.children[0].getBoundingClientRect().left
-          positionIndex = afterRotationIndex
+          rotation = true
         }
       }
-
+      
+      let positionIndex = []
       const blocks = pieceRef.current.children
-      for (let i = 0; i < blocks.length; i++) {
-        const blockBounds = blocks[i].getBoundingClientRect()
-        const coordX = Math.floor((blockBounds.left - mainGridBounds.left) / blockSize)
-        const coordY = Math.floor((blockBounds.top - mainGridBounds.top + 2) / blockSize) * 12
-        const coordYBottom = Math.floor((blockBounds.bottom - mainGridBounds.top - 2) / blockSize) * 12
-        positionIndex.push({ top: coordX + coordY, bottom: coordX + coordYBottom })
+      if (rotation) {
+        positionIndex = afterRotationIndex
+      } else {
+        for (let i = 0; i < blocks.length; i++) {
+          const blockBounds = blocks[i].getBoundingClientRect()
+          const coordX = Math.floor((blockBounds.left - mainGridBounds.left) / blockSize)
+          const coordY = Math.floor((blockBounds.top - mainGridBounds.top + 2) / blockSize) * 12
+          const coordYBottom = Math.floor((blockBounds.bottom - mainGridBounds.top - 2) / blockSize) * 12
+          positionIndex.push({ top: coordX + coordY, bottom: coordX + coordYBottom })
+        }
       }
       
       if (inputs.includes("ArrowLeft")) {
