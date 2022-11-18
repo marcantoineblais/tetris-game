@@ -169,8 +169,8 @@ const MainGrid = ({
         !db.buffer[e.key] &&
         !db.inputBlock[e.key]
       ) {
+        
         db.shortPush = [...db.shortPush, e.key]
-
         if (movementKeys.includes(e.key)) {
           db.buffer[e.key] = setTimeout(() => {
             db.shortPush = db.shortPush.filter(key => key !== e.key)
@@ -179,8 +179,7 @@ const MainGrid = ({
         }
 
         if (cmdKeys.includes(e.key)) {
-          db.inputBlock[e.key] = true
-          db.shortPush = [...db.shortPush, e.key]
+          db.inputBlock[e.key] = true        
         }
       }
     }
@@ -257,7 +256,7 @@ const MainGrid = ({
         mainGridSpaces[index.bottom].classList.add('taken', db.piece.color)
       })     
       
-      const numOfLines = destroyLines(mainGridRef)
+      const numOfLines = destroyLines()
 
       if (numOfLines) {
         db.destroyedLines += numOfLines
@@ -305,7 +304,7 @@ const MainGrid = ({
         for (let i = 0; i < mainGridSpaces.length - 1; i++) {
           const space = mainGridSpaces[i]
           if (!space.classList.contains('destroy')) {
-            updatedGrid.push(space)
+            updatedGrid.push(space.className)
           }
         }
         for (let i = 0; i < mainGridSpaces.length - 1; i++) {
@@ -313,7 +312,7 @@ const MainGrid = ({
           if (i < count * 12) {
             space.className = 'grid-space'
           } else {
-            space.className = updatedGrid[i - (count * 12)].className
+            space.className = updatedGrid[i - (count * 12)]
             if (space.classList.contains('taken')) {
               db.takenSpaces.push(i)
             }
@@ -325,12 +324,17 @@ const MainGrid = ({
     
     // EXECUTE INPUTS FROM BUFFER EVERY FRAME WHEN NO COLLISION DETECTED
     const executeInputs = () => {
+      const inputs = db.shortPush.concat(db.longPush)
+      if (inputs.includes('p')) {
+        db.inputLock = !db.inputLock
+        db.shortPush = []
+      }
+
       if (db.inputLock) {
         return
       }
       
       const mainGridBounds = mainGridRef.current.getBoundingClientRect()
-      const inputs = db.shortPush.concat(db.longPush)
       const afterRotationIndex = []
       let rotation
       if (inputs.includes(' ')) {
